@@ -124,6 +124,12 @@ def agent_board_html() -> str:
     return _h("Ajan masası", row)
 
 
+APP_HEADER = (
+    '<div style="display:flex;align-items:baseline;gap:12px;padding:2px 4px 12px">'
+    '<div style="font-size:23px;font-weight:800;color:#1a1a1a;letter-spacing:.6px">KADİM</div>'
+    '<div style="font-size:13px;font-weight:600;color:#2b80b9">Kamu Dilekçe ve İnceleme Mekanizması</div>'
+    '</div>'
+)
 EMPTY_BOARD = agent_board_html()
 EMPTY_RAG = _h("Mevzuat", "Henüz yok. Belgeyi işle.")
 EMPTY_LETTER = (
@@ -525,6 +531,7 @@ except TypeError:
         demo_ctx = gr.Blocks(**_kw)
 
 with demo_ctx as demo:
+    gr.HTML(APP_HEADER)
     agent_md = gr.HTML(EMPTY_BOARD)
     st_ocr = gr.State("")
     st_analysis = gr.State(None)
