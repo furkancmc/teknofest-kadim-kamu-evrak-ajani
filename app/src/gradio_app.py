@@ -515,7 +515,7 @@ try:
 except Exception:
     pass
 
-_kw = dict(title="Belediye Evrak Masası", theme=_theme, css=WHITE_CSS)
+_kw = dict(title="KADİM — Evrak Masası", theme=_theme, css=WHITE_CSS)
 try:
     demo_ctx = gr.Blocks(js=JS_LIGHT, head='<meta name="color-scheme" content="light">', fill_width=True, **_kw)
 except TypeError:

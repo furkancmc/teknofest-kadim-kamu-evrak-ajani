@@ -1,5 +1,5 @@
 # =============================================================================
-# Belediye Evrak Ajani - ust duzey bagimliliklar
+# KADIM (Kamu Dilekce ve Inceleme Mekanizmasi) - ust duzey bagimliliklar
 # Her modulun kendi ihtiyaci alt klasorlerdeki requirements dosyalarinda da
 # ayrica listelenmistir (analiz_qwen1/, mevzuat_rag/, QWEN_VL_ocr/).
 # =============================================================================

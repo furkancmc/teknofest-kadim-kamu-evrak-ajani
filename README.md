@@ -101,7 +101,7 @@ Analiz ve yazı ajanları **aynı taban modeli** paylaşır; ikinci bir 7B model
 ## 2. Depo Yapısı
 
 ```
-belediye-evrak-ajani/
+kadim/
 ├── README.md                     # Bu dosya
 ├── LICENSE                       # MIT
 ├── requirements.txt              # Üst düzey bağımlılıklar
@@ -282,7 +282,7 @@ Arama sorgusu iki parçadan oluşur: analiz ajanının belirlediği konunun mevz
 
 Konuyla yalnızca yüzeysel örtüşen maddeleri geriye iten **sıralama düzeltmesi**, ilk sıradaki isabeti 59,5'ten **69,0**'a çıkardı ve hiç sonuç bulunamayan sorgu sayısını 6'dan 4'e indirdi.
 
-Aynı koşullarda denenen `multilingual-e5-large` yalnızca H@1'de 1,6 puan öndeydi; H@3, H@5 ve kaçırma sayısında geride kaldı.Bundan dolayı BGE-M3 modeli kullanıma alındı. 
+Aynı koşullarda denenen `multilingual-e5-large` yalnızca H@1'de 1,6 puan öndeydi; H@3, H@5 ve kaçırma sayısında geride kaldı. Bundan dolayı BGE-M3 modeli kullanıma alındı.
 
 ### 3.5. Birim Yönlendirmesi
 
@@ -391,9 +391,9 @@ Notebook'lar sırayla çalıştırılır:
 
 Canlı sistem `app/notebooks/Qwen1_RAG_Demo_Colab.ipynb` notebook'u ile çalıştırılır; GPU'lu bir ortam gerekir. `app/src/gradio_app.py`, aynı arayüzün okunabilir kaynak karşılığıdır. Notebook sonunda paylaşılabilir bir Gradio bağlantısı açılır.
 
-**Belediye Evrak Masası arayüzü** — solda belge, ortada memur kararı ve mevzuat maddeleri, sağda üretilen taslak:
+**KADİM Evrak Masası arayüzü** — solda belge, ortada memur kararı ve mevzuat maddeleri, sağda üretilen taslak:
 
-![Belediye Evrak Masası arayüzü](docs/demo_ekran.png)
+![KADİM Evrak Masası arayüzü](docs/demo_ekran.png)
 
 Statik önizleme: `docs/demo_onizleme_mock.html`.
 
