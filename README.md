@@ -1,4 +1,4 @@
-# Belediye Evrak Ajanı
+# KADİM: Kamu Dilekçe ve İnceleme Mekanizması
 
 **Kamu evrak ve yazışma süreçleri için uçtan uca yapay zekâ ajan sistemi**
 
