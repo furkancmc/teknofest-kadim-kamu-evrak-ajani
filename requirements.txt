@@ -23,4 +23,4 @@ qwen-vl-utils       # Qwen2.5-VL gorsel on-isleme
 
 # --- Demo arayuzu ---
 gradio>=4.0
-vllm>=0.5.0         # canli servis (Colab A100)
+vllm>=0.5.0         # canli servis

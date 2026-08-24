@@ -52,3 +52,6 @@ test_eval_results.json
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ---- Yarisma sartnamesi (TEKNOFEST dokumani, depoya girmez) ----
+*.pdf
