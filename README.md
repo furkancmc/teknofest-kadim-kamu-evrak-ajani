@@ -282,7 +282,7 @@ Arama sorgusu iki parçadan oluşur: analiz ajanının belirlediği konunun mevz
 
 Konuyla yalnızca yüzeysel örtüşen maddeleri geriye iten **sıralama düzeltmesi**, ilk sıradaki isabeti 59,5'ten **69,0**'a çıkardı ve hiç sonuç bulunamayan sorgu sayısını 6'dan 4'e indirdi.
 
-Aynı koşullarda denenen `multilingual-e5-large` yalnızca H@1'de 1,6 puan öndeydi; H@3, H@5 ve kaçırma sayısında geride kaldı. Yazıcı ajan ilk üç maddeyi kullandığından üretime **BGE-M3** alındı.
+Aynı koşullarda denenen `multilingual-e5-large` yalnızca H@1'de 1,6 puan öndeydi; H@3, H@5 ve kaçırma sayısında geride kaldı.Bundan dolayı BGE-M3 modeli kullanıma alındı. 
 
 ### 3.5. Birim Yönlendirmesi
 
