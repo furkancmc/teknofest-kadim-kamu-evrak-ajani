@@ -30,6 +30,7 @@ Evrak görseli/metni → OCR → Analiz → Mevzuat → [ Memur kararı ] → Re
 | Analiz | `sender_type` doğruluğu ↑ | %78,0 | **%95,4** | +17,4 puan |
 | Analiz | `missing_information` doğruluğu ↑ | %74,3 | **%97,9** | +23,6 puan |
 | Yazıcı | `response_type` doğruluğu ↑ | %50,0 | **%82,18** | +32,2 puan |
+| Yazıcı | Mevzuat atıf sadakati ↑ | %83,91 | **%92,53** | +8,6 puan |
 | Mevzuat araması | İlk sırada isabet (H@1) ↑ | 59,5 | **69,0** | +9,5 puan |
 
 Her modülün ölçüm ayrıntısı, kendi bölümünün sonundadır.
@@ -253,12 +254,16 @@ Nadir kalan yanıt türleri `augment_missing_types.py` ile dengelendi. Modelin u
 
 **Sonuç** — test kümesi: 522 kayıt.
 
-| Model | Notebook | `response_type` doğruluğu ↑ |
-|---|---|---:|
-| Ham model | `03_evaluate_base_model.ipynb` | %50,0 |
-| **İnce ayarlı (LoRA)** | `02_evaluate_qwen25_7b.ipynb` | **%82,18** |
+| Ölçüt | Ham model | İnce ayarlı (LoRA) | Kazanç |
+|---|---:|---:|---|
+| `response_type` doğruluğu | %50,0 | **%82,18** | +32,2 puan |
+| Mevzuat atıf sadakati | %83,91 | **%92,53** | +8,6 puan |
+
+Ölçüm notebook'ları: ham model `03_evaluate_base_model.ipynb`, ince ayarlı model `02_evaluate_qwen25_7b.ipynb`. İkisi de aynı 522 kaydı, aynı kontrollerle değerlendirir.
 
 İnce ayar, doğru yazı türünü seçme başarısını **+32,2 puan** artırdı. Ham model vakaların ancak yarısında doğru türü seçebilirken, ince ayarlı model kurum pratiğine uygun türü büyük çoğunlukla isabet ettiriyor.
+
+**Mevzuat atıf sadakati**, üretilen taslakta geçen kanun ve madde numaralarının gerçekten memura sunulan mevzuat listesinden gelip gelmediğini ölçer; yani modelin madde uydurmadan yazma oranıdır. Kontrol `02_evaluate_qwen25_7b.ipynb` içindeki `check_legislation_citation` fonksiyonuyla yapılır. İnce ayar bu oranı **%92,53**'e çıkardı — eğitim setindeki %15'lik boş mevzuat tasarımının doğrudan karşılığı.
 
 ### 3.4. Mevzuat Arama Motoru · `mevzuat_rag/`
 
