@@ -45,7 +45,8 @@ Her modülün ölçüm ayrıntısı, kendi bölümünün sonundadır.
 4. [Veri Şeması](#4-veri-şeması)
 5. [Kurulum ve Çalıştırma](#5-kurulum-ve-çalıştırma)
 6. [Kullanılan Modeller ve Lisanslar](#6-kullanılan-modeller-ve-lisanslar)
-7. [Etik, Veri Kullanımı ve Kaynaklar](#7-etik-veri-kullanımı-ve-kaynaklar)
+7. [Yenilikçilik ve Uygulanabilirlik](#7-yenilikçilik-ve-uygulanabilirlik)
+8. [Etik, Veri Kullanımı ve Kaynaklar](#8-etik-veri-kullanımı-ve-kaynaklar)
 
 ---
 
@@ -424,7 +425,41 @@ Statik önizleme: `docs/demo_onizleme_mock.html`.
 
 ---
 
-## 7. Etik, Veri Kullanımı ve Kaynaklar
+## 7. Yenilikçilik ve Uygulanabilirlik
+
+### Kurumda nasıl kullanılır
+
+Sistem, evrak masasındaki memurun yerine geçmez; önündeki işi hazırlar. Dilekçe ya da kurum yazısı geldiğinde belgeyi okur, konusunu ve talebini çıkarır, ilgili mevzuat maddelerini önüne getirir. Memur maddeleri işaretler, süreç durumunu seçer, gerekirse not düşer; sistem taslağı ondan sonra üretir. Taslağı düzenleyen ve imzalayan memurdur.
+
+Bu ayrım bilinçlidir. İdari işlemin sorumluluğu bir modele devredilemez; kararın memurda kalması kurumda benimsenmenin ön koşuludur. Aynı tasarım, modelin hata yaptığı durumların işleme yansımadan yakalanmasını da sağlar.
+
+### Veri kurumdan çıkmaz
+
+Yığının tamamı açık ağırlıklı modellerden (Qwen2.5, BGE) ve açık kaynak kütüphanelerden oluşur; hiçbir aşamada dış servise istek gönderilmez. Sistem kurumun kendi donanımında (on-premise) çalışabilir.
+
+Vatandaş dilekçesi kişisel veri içerir ve kurum dışına çıkarılması hem mevzuat hem kurumsal politika açısından sorunludur. Kapalı devre çalışabilmesi, bu sistemi bulut tabanlı ticari API'lere dayanan çözümlerden ayıran en belirleyici özelliktir.
+
+### Ölçeklenebilirlik
+
+Analiz ve yazı ajanları tek bir taban modeli paylaşır; ikisi de aynı modele çalışma anında takılan LoRA adaptörleriyle çalışır. İkinci bir 7B model belleğe alınmadığından donanım ihtiyacı yaklaşık yarıya iner.
+
+Adaptörler taban modele göre çok küçüktür. Yeni bir konu, değişen bir yönetmelik veya farklı bir yazışma türü için modelin baştan eğitilmesi gerekmez; ilgili adaptör güncellenir. Birim yönlendirmesi model tahminine değil eşleme tablosuna dayandığı için yeni bir müdürlük eklemek tabloya satır eklemekten ibarettir.
+
+### Ayırt edici tasarım kararları
+
+**Memur kararı akışın ortasında.** Belge otomasyonlarının çoğu uçtan uca çalışıp çıktıyı doğrudan üretir. Burada sistem analiz bittiğinde durur; memurun mevzuat seçimini ve süreç kararını bekler. Yazıcı model, memurun kararını girdi olarak alacak biçimde eğitilmiştir — insan onayı sonradan eklenmiş bir katman değil, mimarinin parçasıdır.
+
+**Bir evraktan çok senaryo (1→N).** Aynı başvuru "incelemede", "eksik bilgi bekleniyor" veya "reddedildi" durumlarında tamamen farklı bir resmî yazı gerektirir. Eğitim seti bu gerçeğe göre kurulmuş, her analiz kaydı farklı süreç durumlarıyla eşlenerek çoğaltılmıştır. Model, aynı evrakı duruma göre farklı yazmayı öğrenir.
+
+**Madde uydurmama davranışı veriyle öğretildi.** Eğitim kayıtlarının yaklaşık %15'inde mevzuat listesi bilinçli olarak boş bırakıldı; model, ilgili madde bulunamadığında atıf uydurmak yerine genel idari usule uygun yazı üretmeyi öğrendi. Halüsinasyon problemine prompt talimatıyla değil eğitim verisiyle yaklaşmak demektir bu ve ölçülebilir bir karşılığı vardır: mevzuat atıf sadakati %83,91'den **%92,53**'e çıkmıştır.
+
+### Genişleme
+
+Mimari alana bağımlı değildir. Mevzuat korpusu ile konu–birim tablosu değiştirildiğinde aynı yapı il müdürlükleri, üniversiteler veya diğer kamu kurumlarının yazışma süreçlerine taşınabilir; modellerin yeniden eğitilmesi yalnızca alan diline uyum için gerekir.
+
+---
+
+## 8. Etik, Veri Kullanımı ve Kaynaklar
 
 **Lisans:** MIT — bkz. [LICENSE](LICENSE).
 
