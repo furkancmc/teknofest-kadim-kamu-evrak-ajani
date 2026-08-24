@@ -272,6 +272,8 @@ Motor, kamuya açık mevzuat metinlerini madde düzeyinde indeksler ve üç aşa
 
 Arama sorgusu iki parçadan oluşur: analiz ajanının belirlediği konunun mevzuat dilindeki karşılığı ve başvurunun talep cümlesi (`requested_action`).
 
+**Korpus:** Mevzuat metinleri T.C. Cumhurbaşkanlığı [Mevzuat Bilgi Sistemi](https://www.mevzuat.gov.tr/) üzerinden, kamuya açık güncel metinler olarak alınmıştır. Korpus, [3.5](#35-birim-yönlendirmesi) bölümündeki 11 müdürlüğün görev alanına giren kanun ve yönetmeliklerden oluşur. Metinler madde düzeyinde parçalanıp indekslenir. Üretilen indeks dosyaları (`chunks.jsonl`, embedding vektörleri) boyutları nedeniyle depoda yer almaz; kaynak metinler kamuya açık olduğundan aynı korpus Mevzuat Bilgi Sistemi'nden yeniden derlenebilir.
+
 **Sonuç** — test kümesi: 126 kavramsal sorgudan oluşan sabit bir referans kümesi. Tüm koşular aynı sorgular üzerinde, tek seferde tek değişken değiştirilerek yapıldı.
 
 | Koşu | Vektör modeli | H@1 ↑ | H@3 ↑ | H@5 ↑ | MRR ↑ | Kaçırma ↓ |
@@ -425,7 +427,7 @@ Statik önizleme: `docs/demo_onizleme_mock.html`.
 
 - **Görev 1 ve 2:** DeepSeek API'si ile üretilmiş kurgu dilekçeler ve resmî yazışma taslakları.
 - **OCR:** Hugging Face üzerindeki açık derlemeden alınan, kamuya açık yargı kararı metinleri. Bu metinler antetli sayfa olarak yeniden basılmıştır; depodaki görseller taranmış resmî evrak değil, eğitim için üretilmiş sentetik belge görüntüleridir.
-- **Mevzuat:** Kamuya açık kanun ve yönetmelik metinleri.
+- **Mevzuat:** T.C. Cumhurbaşkanlığı Mevzuat Bilgi Sistemi (mevzuat.gov.tr) üzerinden erişilen, kamuya açık kanun ve yönetmelik metinleri.
 
 Hiçbir veri kümesinde gerçek kişisel veri (TCKN, ad, adres, telefon) yer almaz; tüm örnekler sentetiktir.
 
@@ -437,4 +439,5 @@ Hiçbir veri kümesinde gerçek kişisel veri (TCKN, ad, adres, telefon) yer alm
 - vLLM — çalışma zamanı çıkarım motoru
 - BGE-M3 ve BGE-reranker-v2-m3 — BAAI
 - OCR kaynak metinleri — [`erdem-erdem/Turkish-Law-Documents-700k-clustered`](https://huggingface.co/datasets/erdem-erdem/Turkish-Law-Documents-700k-clustered); birincil kurumlar [Yargıtay Karar Arama](https://karararama.yargitay.gov.tr/) ve [Danıştay Karar Arama](https://kararara.danistay.gov.tr/)
+- Mevzuat metinleri — [T.C. Cumhurbaşkanlığı Mevzuat Bilgi Sistemi](https://www.mevzuat.gov.tr/)
 - Sentetik evrak üretimi — DeepSeek API

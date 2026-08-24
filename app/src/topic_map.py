@@ -13,6 +13,7 @@ def load_maps(path=None) -> dict:
         cands.append(Path(path))
     cands.extend(
         [
+            _HERE.parent / "maps" / "belediye_konu.json",  # depo yerleşimi: app/maps/
             _HERE / "maps" / "belediye_konu.json",
             _HERE / "belediye_konu.json",
         ]
