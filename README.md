@@ -30,9 +30,9 @@ Evrak görseli/metni → OCR → Analiz → Mevzuat → [ Memur kararı ] → Re
 | Analiz | `sender_type` doğruluğu ↑ | %78,0 | **%95,4** | +17,4 puan |
 | Analiz | `missing_information` doğruluğu ↑ | %74,3 | **%97,9** | +23,6 puan |
 | Yazıcı | `response_type` doğruluğu ↑ | %50,0 | **%82,18** | +32,2 puan |
-| Mevzuat (RAG) | İlk sırada isabet (H@1) ↑ | 59,5 | **69,0** | +9,5 puan |
+| Mevzuat araması | İlk sırada isabet (H@1) ↑ | 59,5 | **69,0** | +9,5 puan |
 
-Ölçüm ayrıntıları ve test kümelerinin büyüklüğü için bkz. [8. Değerlendirme Sonuçları](#8-değerlendirme-sonuçları).
+Her modülün ölçüm ayrıntısı, kendi bölümünün sonundadır.
 
 ---
 
@@ -40,15 +40,11 @@ Evrak görseli/metni → OCR → Analiz → Mevzuat → [ Memur kararı ] → Re
 
 1. [Sistem Mimarisi ve Akış](#1-sistem-mimarisi-ve-akış)
 2. [Depo Yapısı](#2-depo-yapısı)
-3. [Modüller ve Model Eğitimi](#3-modüller-ve-model-eğitimi)
+3. [Modüller, Eğitim ve Sonuçlar](#3-modüller-eğitim-ve-sonuçlar)
 4. [Veri Şeması](#4-veri-şeması)
-5. [Resmî Yazışma Kuralları](#5-resmî-yazışma-kuralları)
-6. [Birim Yönlendirmesi ve Mevzuat Havuzu](#6-birim-yönlendirmesi-ve-mevzuat-havuzu)
-7. [Kurulum ve Çalıştırma](#7-kurulum-ve-çalıştırma)
-8. [Değerlendirme Sonuçları](#8-değerlendirme-sonuçları)
-9. [Kullanılan Modeller ve Lisanslar](#9-kullanılan-modeller-ve-lisanslar)
-10. [Ticarileşme ve Ölçeklenebilirlik](#10-ticarileşme-ve-ölçeklenebilirlik)
-11. [Etik, Veri Kullanımı ve Kaynaklar](#11-etik-veri-kullanımı-ve-kaynaklar)
+5. [Kurulum ve Çalıştırma](#5-kurulum-ve-çalıştırma)
+6. [Kullanılan Modeller ve Lisanslar](#6-kullanılan-modeller-ve-lisanslar)
+7. [Etik, Veri Kullanımı ve Kaynaklar](#7-etik-veri-kullanımı-ve-kaynaklar)
 
 ---
 
@@ -72,7 +68,7 @@ Sistem, her biri tek bir işi üstlenen dört ajandan oluşur. Ajanların tam or
              │                  missing_information, summary
              ▼
  ┌────────────────────────┐
- │ 3) MEVZUAT  (RAG)      │  Hibrit arama + yeniden sıralama
+ │ 3) MEVZUAT             │  Hibrit arama + yeniden sıralama
  │    mevzuat_rag/        │  →  ilgili kanun ve yönetmelik maddeleri
  └───────────┬────────────┘
              ▼
@@ -91,14 +87,14 @@ Dört ajanı tek arayüzde birleştiren orkestratör ve Gradio demosu `app/` kla
 
 ### Çalışma zamanı: vLLM ve çoklu LoRA
 
-Eğitim Unsloth/TRL ile yapılır, canlı servis **vLLM** üzerinde çalışır. LoRA adaptörleri taban modele birleştirilmez (merge edilmez); vLLM'in çoklu adaptör desteğiyle çalışma anında takılır:
+Eğitim Unsloth/TRL ile yapılır, canlı servis **vLLM** üzerinde çalışır. LoRA adaptörleri taban modele birleştirilmez; vLLM'in çoklu adaptör desteğiyle çalışma anında takılır:
 
 | Motor | Model | Adaptör | Görev |
 |---|---|---|---|
 | 1 | Qwen2.5-VL-7B-Instruct | OCR LoRA | Görsel → metin |
 | 2 | Qwen2.5-7B-Instruct | `analiz_lora` + `yazi_lora` | Metin → analiz JSON'u, JSON → resmî yazı |
 
-Analiz ve yazı ajanları **aynı taban modeli** paylaşır; ikinci bir 7B model belleğe yüklenmez. RAG arama motoru CPU üzerinde çalışır, böylece GPU tamamen dil modellerine kalır. Bu tasarım tüm sistemin tek GPU ile servis edilmesini mümkün kılar.
+Analiz ve yazı ajanları **aynı taban modeli** paylaşır; ikinci bir 7B model belleğe yüklenmez.
 
 ---
 
@@ -170,17 +166,19 @@ belediye-evrak-ajani/
 
 ---
 
-## 3. Modüller ve Model Eğitimi
+## 3. Modüller, Eğitim ve Sonuçlar
 
-Üç model eğitildi. Üçü de tam parametre eğitimi yerine **LoRA** ile uyarlandı; böylece 7B boyutundaki modeller sınırlı veri ve tek GPU ile özelleştirilebildi.
+Üç dil modeli eğitildi. Üçü de tam parametre eğitimi yerine **LoRA** ile, `Qwen/Qwen2.5-7B-Instruct` (OCR için `Qwen2.5-VL-7B-Instruct`) taban modeli üzerine, **bf16** hassasiyetle uyarlandı.
+
+Her modülün ölçümü eğitimde kullanılmayan sabit bir test kümesi üzerinde, ham model ile ince ayarlı model **aynı kümede** karşılaştırılarak yapıldı.
 
 ### 3.1. Okuyucu — OCR · `QWEN_VL_ocr/`
 
 **Amaç:** Türkçe belge görsellerinden metin çıkarmak.
 
-**Veri:** Açık kaynaklı [`erdem-erdem/Turkish-Law-Documents-700k-clustered`](https://huggingface.co/datasets/erdem-erdem/Turkish-Law-Documents-700k-clustered) derlemesindeki düz metinler kullanıldı. Bu metinler Yargıtay ve Danıştay'ın kamuya açık karar arama sistemlerinden derlenmiştir. `generate_dataset_1000.py` her metni antetli bir belge sayfası olarak yeniden basar ve PNG'ye çevirir. Böylece 1000 belge görseli üretilir: 800 eğitim, 100 doğrulama, 100 test.
+**Veri:** Açık kaynaklı [`erdem-erdem/Turkish-Law-Documents-700k-clustered`](https://huggingface.co/datasets/erdem-erdem/Turkish-Law-Documents-700k-clustered) derlemesindeki düz metinler kullanıldı. Bu metinler Yargıtay ve Danıştay'ın kamuya açık karar arama sistemlerinden derlenmiştir. `generate_dataset_1000.py` her metni antetli bir belge sayfası olarak yeniden basar ve PNG'ye çevirir: 800 eğitim, 100 doğrulama, 100 test.
 
-Gerçek tarama koşullarını temsil etmek için görseller dört bozulma seviyesine ayrılır:
+Gerçek tarama koşullarını temsil etmek için görseller dört bozulma seviyesine ayrılır ve her gruptan 250 belge üretilir:
 
 | Grup | Tarama kalitesi | Örnek |
 |---|---|---|
@@ -189,15 +187,22 @@ Gerçek tarama koşullarını temsil etmek için görseller dört bozulma seviye
 | C | Belirgin bulanıklık, kontrast düşüşü, gürültü | `QWEN_VL_ocr/data/C_0065.png` |
 | D | Düşük çözünürlük, ağır gürültü, eğrilik | `QWEN_VL_ocr/data/D_0064.png` |
 
-Her gruptan 250 belge üretilir. Test kümesi eğitimde kullanılmaz.
+**Yöntem:** Görsel kodlayıcı dondurulur; LoRA adaptörleri yalnızca dil modeli katmanlarına eklenir.
 
-**Yöntem:** Görsel kodlayıcı dondurulur; LoRA adaptörleri yalnızca dil modeli katmanlarına eklenir (`r=16`, 3 tur). Ölçüm, karakter hata oranı (CER) ve Türkçe'ye özgü harflerdeki (ı/i, ş/s, ğ/g, ö/o, ü/u, ç/c) doğruluk üzerinden yapılır.
+**Sonuç** — test kümesi: 100 belge görseli, 21.571 Türkçe karakter.
 
-**Sonuç:** CER 0,4283 → **0,1076**. Ayrıntı: [8.1](#81-okuyucu--ocr).
+| Model | Karakter hata oranı (CER) ↓ | Türkçe karakter doğruluğu ↑ |
+|---|---:|---:|
+| Ham model | 0,4283 | %78,55 |
+| **İnce ayarlı (LoRA)** | **0,1076** | **%85,90** |
+
+İnce ayar, karakter hata oranını yaklaşık **dört kat** düşürdü. Kazanç en çok Türkçe'ye özgü harflerde (ı, ş, ğ, ö, ü, ç) görüldü: ham model bu harfleri sıklıkla ASCII karşılıklarına indirgerken, ince ayarlı model doğru üretiyor.
 
 ### 3.2. Analiz — Görev 1 · `analiz_qwen1/`
 
 **Amaç:** Vatandaş ya da kurum başvurusunun ham metnini okuyup yapılandırılmış JSON'a çevirmek.
+
+**Çıktı alanları:** `document_type`, `sender_type`, `primary_topic`, `requested_action`, `key_information`, `missing_information`, `summary`.
 
 **Veri:** 11 müdürlük için ayrı ayrı yazılmış `generate_dataset_*.py` betikleri, her birimin kendi şemasına uygun sentetik evrak üretir. Toplam **2.444 evrak**, **58 konu**, **11 müdürlük**:
 
@@ -210,22 +215,23 @@ Her gruptan 250 belge üretilir. Test kümesi eğitimde kullanılmaz.
 
 Konu bazında dağılım `analiz_qwen1/veri/split_stats.txt` dosyasındadır. Veri üretiminde DeepSeek API'si kullanılır; anahtar `.env` dosyasından okunur ve depoya girmez.
 
-**Çıktı alanları:** `document_type`, `sender_type`, `primary_topic`, `requested_action`, `key_information`, `missing_information`, `summary`.
+**Sonuç** — test kümesi: 241 kayıt.
 
-**Sonuç:** `document_type` %70,1 → **%85,5**, `sender_type` %78,0 → **%95,4**, `missing_information` %74,3 → **%97,9**. Ayrıntı: [8.2](#82-analiz--görev-1).
+| Ölçüt | Ham model | İnce ayarlı (LoRA) | Kazanç |
+|---|---:|---:|---|
+| `document_type` doğruluğu | %70,1 | **%85,5** | +15,4 puan |
+| `sender_type` doğruluğu | %78,0 | **%95,4** | +17,4 puan |
+| `missing_information` doğruluğu | %74,3 | **%97,9** | +23,6 puan |
+
+İnce ayarlı model ayrıca `primary_topic` alanında, 58 başlıktan oluşan konu taksonomisi üzerinde **%72,2** doğruluğa ulaşıyor.
+
+`missing_information` doğruluğu, modelin evrakta eksik bilgi bulunup bulunmadığını doğru tespit etme oranıdır. Örneğin bir imar dilekçesinde ada veya parsel numarası yoksa modelin bunu eksik olarak işaretlemesi beklenir. En büyük kazanç bu alanda görüldü.
 
 ### 3.3. Yazıcı — Görev 2 · `yazi_qwen2/`
 
-**Amaç:** Analiz JSON'unu, memurun seçtiği süreç durumunu ve getirilen mevzuat maddelerini alarak idari aksiyonları, yanıt türünü, süreç bilgisini ve **resmî yazı taslağını** üretmek.
+**Amaç:** Analiz JSON'unu, memurun seçtiği süreç durumunu ve onaylanan mevzuat maddelerini alarak idari aksiyonları, yanıt türünü, süreç bilgisini ve **resmî yazı taslağını** üretmek.
 
-**Veri:** ChatML biçiminde toplam **5.625 kayıt**:
-
-| Küme | Kayıt |
-|---|---:|
-| Eğitim | 4.240 |
-| Doğrulama | 863 |
-| Test | 522 |
-| **Toplam** | **5.625** |
+**Veri:** ChatML biçiminde toplam **5.625 kayıt** — 4.240 eğitim, 863 doğrulama, 522 test.
 
 **Bir evraktan çok senaryo (1→N):** Gerçek idari hayatta aynı başvuru farklı süreç durumlarına düşebilir ve her durum farklı bir resmî yazı gerektirir. "İncelemede", "eksik bilgi bekleniyor", "yönlendirildi", "reddedildi" ve "tamamlandı" durumlarının her biri için ayrı bir yazı yazılır. Bu nedenle her analiz kaydı farklı süreç durumlarıyla eşlenerek birden çok eğitim örneğine açıldı. Yazıcı kümesinin (5.625) analiz kümesinden (2.444) büyük olmasının sebebi budur; model böylece aynı evrakın duruma göre nasıl farklı yazıldığını öğrenir.
 
@@ -243,22 +249,46 @@ Konu bazında dağılım `analiz_qwen1/veri/split_stats.txt` dosyasındadır. Ve
 | ONAY_YAZISI | 315 | | | |
 | TESPIT_TUTANAGI | 253 | | | |
 
-Nadir kalan yanıt türleri `augment_missing_types.py` ile dengelendi. Modelin uyduğu kuralların tamamı `yazi_qwen2/canonical_system_prompt.txt` dosyasındadır.
+Nadir kalan yanıt türleri `augment_missing_types.py` ile dengelendi. Modelin uyduğu resmî yazışma kurallarının tamamı `yazi_qwen2/canonical_system_prompt.txt` dosyasındadır.
 
-**Sonuç:** `response_type` doğruluğu %50,0 → **%82,18**. Ayrıntı: [8.3](#83-yazıcı--görev-2).
+**Sonuç** — test kümesi: 522 kayıt.
 
-### 3.4. İnce ayar hiperparametreleri
+| Model | Notebook | `response_type` doğruluğu ↑ |
+|---|---|---:|
+| Ham model | `03_evaluate_base_model.ipynb` | %50,0 |
+| **İnce ayarlı (LoRA)** | `02_evaluate_qwen25_7b.ipynb` | **%82,18** |
 
-| Ayar | Değer |
-|---|---|
-| Taban model | `Qwen/Qwen2.5-7B-Instruct` (3B ve 14B de desteklenir) |
-| Eğitim çerçevesi | Unsloth / HuggingFace TRL (SFTTrainer) |
-| LoRA | `r=16` (veya 32), `alpha=32` (veya 64) |
-| Hedef katmanlar | `q_proj`, `k_proj`, `v_proj`, `o_proj`, `gate_proj`, `up_proj`, `down_proj` |
-| Bağlam uzunluğu | 2048–4096 belirteç |
-| Tur / ısınma | 3 tur, %5 ısınma |
-| Öğrenme oranı | `2e-4` (QLoRA) · `5e-5` (16-bit LoRA) |
-| Zamanlayıcı / hassasiyet | cosine · bf16 |
+İnce ayar, doğru yazı türünü seçme başarısını **+32,2 puan** artırdı. Ham model vakaların ancak yarısında doğru türü seçebilirken, ince ayarlı model kurum pratiğine uygun türü büyük çoğunlukla isabet ettiriyor.
+
+### 3.4. Mevzuat Arama Motoru · `mevzuat_rag/`
+
+**Amaç:** Başvuruyla ilgili kanun ve yönetmelik maddelerini bulup memura sunmak.
+
+Motor, kamuya açık mevzuat metinlerini madde düzeyinde indeksler ve üç aşamada çalışır:
+
+1. **Anlamsal arama** — BGE-M3 vektör temsilleriyle, sorguyla aynı anlama gelen maddeler bulunur.
+2. **Sözcük tabanlı arama** — BM25 ile kanun adı, madde numarası gibi birebir eşleşmeler yakalanır.
+3. **Birleştirme ve yeniden sıralama** — İki listenin sonuçları RRF ile birleştirilir ve BGE-reranker-v2-m3 ile yeniden sıralanır.
+
+Arama sorgusu iki parçadan oluşur: analiz ajanının belirlediği konunun mevzuat dilindeki karşılığı ve başvurunun talep cümlesi (`requested_action`).
+
+**Sonuç** — test kümesi: 126 kavramsal sorgudan oluşan sabit bir referans kümesi. Tüm koşular aynı sorgular üzerinde, tek seferde tek değişken değiştirilerek yapıldı.
+
+| Koşu | Vektör modeli | H@1 ↑ | H@3 ↑ | H@5 ↑ | MRR ↑ | Kaçırma ↓ |
+|---|---|---:|---:|---:|---:|---:|
+| Taban | BGE-M3 | 59,5 | 84,1 | 92,9 | 0,729 | 6 |
+| **Üretim** | **BGE-M3 + sıralama düzeltmesi** | **69,0** | **86,5** | **92,9** | **0,789** | **4** |
+| Alternatif | multilingual-e5-large + sıralama düzeltmesi | 70,6 | 84,9 | 91,3 | 0,792 | 6 |
+
+Konuyla yalnızca yüzeysel örtüşen maddeleri geriye iten **sıralama düzeltmesi**, ilk sıradaki isabeti 59,5'ten **69,0**'a çıkardı ve hiç sonuç bulunamayan sorgu sayısını 6'dan 4'e indirdi.
+
+Aynı koşullarda denenen `multilingual-e5-large` yalnızca H@1'de 1,6 puan öndeydi; H@3, H@5 ve kaçırma sayısında geride kaldı. Yazıcı ajan ilk üç maddeyi kullandığından üretime **BGE-M3** alındı.
+
+### 3.5. Birim Yönlendirmesi
+
+**Hedef müdürlük model tahminine bırakılmaz.** Analiz ajanının belirlediği `primary_topic` etiketi, `app/maps/belediye_konu.json` dosyasındaki sabit eşleme tablosu üzerinden bir müdürlüğe karşılık gelir. 58 konu, 11 müdürlüğe eşlenmiştir: İmar ve Şehircilik, Fen İşleri, Zabıta, Çevre Koruma ve Kontrol, Temizlik İşleri, Veteriner İşleri, Sosyal Yardım İşleri, Park ve Bahçeler, Mali Hizmetler, Hukuk İşleri, Yazı İşleri.
+
+Böylece yönlendirme kararı deterministik, tekrarlanabilir ve denetlenebilir olur; modelin var olmayan bir birim üretmesi mümkün değildir.
 
 ---
 
@@ -319,61 +349,9 @@ Model bu listelerin dışında değer üretemez.
 
 ---
 
-## 5. Resmî Yazışma Kuralları
+## 5. Kurulum ve Çalıştırma
 
-Üretilen taslaklar, Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik'e göre doğrulanır.
-
-**Arz / rica hiyerarşisi.** Kapanış ifadesi, yazının muhatabına göre belirlenir:
-
-| Muhatap | Kapanış |
-|---|---|
-| Vatandaş veya özel kuruluş | "Bilgilerinizi rica ederim." / "Gereğini saygılarımla rica ederim." |
-| Üst makam (valilik, kaymakamlık, mahkeme, savcılık, bakanlık) | "Gereğini saygılarımla arz ederim." |
-| Eşdüzey kamu kurumu | "Gereğini bilgilerinize arz ve rica ederim." |
-
-**Biçim.** `T.C.` başlığı, başkanlık ve müdürlük satırları, `Sayı`, `Konu`, muhatap ve varsa `İlgi` bölümleri eksiksiz yazılır.
-
-**Mevzuat atfı.** Atıflar başlık satırına değil, gövde paragrafına yerleştirilir ve olaya uyarlanmış doğal bir cümle içinde geçer; madde metni birebir kopyalanmaz. Yalnızca memurun onayladığı maddeler kullanılabilir, liste dışı madde uydurulamaz.
-
-**Üslup ayrımı.** `process_information` iç sistem notudur: tek cümle, hitapsız. `draft` ise tam bir resmî yazıdır ve asgari 250 kelimedir.
-
----
-
-## 6. Birim Yönlendirmesi ve Mevzuat Havuzu
-
-**Birim yönlendirmesi model tahminine bırakılmaz.** Analiz ajanının belirlediği `primary_topic` etiketi, `app/maps/belediye_konu.json` dosyasındaki sabit eşleme tablosu üzerinden bir müdürlüğe karşılık gelir. 58 konu, 11 müdürlüğe eşlenmiştir. Bu tasarım yönlendirme hatalarını sıfıra indirir ve kararı denetlenebilir kılar.
-
-| Müdürlük | Kapsadığı başlıca mevzuat |
-|---|---|
-| İmar ve Şehircilik | 3194 İmar Kanunu, 6306 Kentsel Dönüşüm, 4708 Yapı Denetimi, 2942 Kamulaştırma |
-| Fen İşleri | 4734 Kamu İhale, 4735 Kamu İhale Sözleşmeleri, 2918 Karayolları Trafik, Otopark Yönetmeliği |
-| Zabıta | 5326 Kabahatler, 1608 sayılı Kanun, İşyeri Açma ve Çalışma Ruhsatları, Pazar Yerleri Yönetmeliği |
-| Çevre Koruma ve Kontrol | 2872 Çevre Kanunu, Çevresel Gürültü Yönetmeliği, Sanayi Kaynaklı Hava Kirliliği Yönetmeliği |
-| Temizlik İşleri | 2872 Çevre Kanunu, Sıfır Atık, Atık Yönetimi ve Ambalaj Atıkları yönetmelikleri |
-| Veteriner İşleri | 5199 Hayvanları Koruma, 5996 Veteriner Hizmetleri, kuduz ve kimliklendirme yönetmelikleri |
-| Sosyal Yardım İşleri | 5393 Belediye Kanunu m.14, 5378 Engelliler, 2828 Sosyal Hizmetler, 2022 sayılı Kanun |
-| Park ve Bahçeler | 2872 Çevre Kanunu, 6831 Orman Kanunu, 5393 Belediye Kanunu |
-| Mali Hizmetler | 1319 Emlak Vergisi, 2464 Belediye Gelirleri, 213 VUK, 6183 AATUHK, 5018 sayılı Kanun |
-| Hukuk İşleri | 6100 HMK, 2004 İİK m.89, 2942 Kamulaştırma, 7201 Tebligat Kanunu |
-| Yazı İşleri | 4982 Bilgi Edinme, 3071 Dilekçe Hakkı, 5070 Elektronik İmza, Resmî Yazışma Yönetmeliği |
-
-### Mevzuat arama motoru
-
-`mevzuat_rag/` altındaki arama motoru, kamuya açık mevzuat metinlerini madde düzeyinde indeksler ve üç aşamalı çalışır:
-
-1. **Anlamsal arama** — BGE-M3 vektör temsilleriyle, sorguyla aynı anlama gelen maddeler bulunur.
-2. **Sözcük tabanlı arama** — BM25 ile kanun adı, madde numarası gibi birebir eşleşmeler yakalanır.
-3. **Birleştirme ve yeniden sıralama** — İki listenin sonuçları RRF ile birleştirilir, BGE-reranker-v2-m3 modeliyle yeniden sıralanır ve en isabetli maddeler memura sunulur.
-
-Arama sorgusu, analiz ajanının belirlediği konunun mevzuat dilindeki karşılığı ile başvurunun talep cümlesinden oluşur. Arama tüm mevzuat havuzu üzerinde yapılır; birim veya müdürlük kısıtı uygulanmaz.
-
-Motor CPU üzerinde çalışır, bu sayede GPU tamamen dil modellerine ayrılır. Ölçüm sonuçları için bkz. [8.4](#84-mevzuat-arama-motoru).
-
----
-
-## 7. Kurulum ve Çalıştırma
-
-### 7.1. Bağımlılıklar
+### 5.1. Bağımlılıklar
 
 ```bash
 python -m venv .venv
@@ -387,7 +365,7 @@ Hazır eğitim kümeleri depoda bulunduğundan veri üretimi zorunlu değildir. 
 cp analiz_qwen1/.env.example analiz_qwen1/.env
 ```
 
-### 7.2. Veri üretimi (isteğe bağlı)
+### 5.2. Veri üretimi (isteğe bağlı)
 
 ```bash
 cd analiz_qwen1
@@ -401,7 +379,7 @@ python download_dataset.py
 python generate_dataset_1000.py --dataset_path ./turkish_law_dataset --output_dir ./dataset_1000
 ```
 
-### 7.3. Eğitim
+### 5.3. Eğitim
 
 Notebook'lar sırayla çalıştırılır:
 
@@ -409,11 +387,9 @@ Notebook'lar sırayla çalıştırılır:
 2. `analiz_qwen1/Qwen1_FineTune_Colab.ipynb`
 3. `yazi_qwen2/01_finetune_qwen25_7b.ipynb` → `02_evaluate_qwen25_7b.ipynb` (ham model karşılaştırması için `03_evaluate_base_model.ipynb`)
 
-### 7.4. Uçtan uca demo
+### 5.4. Uçtan uca demo
 
-Canlı sistem `app/notebooks/Qwen1_RAG_Demo_Colab.ipynb` notebook'u ile çalıştırılır; GPU'lu bir ortam gerekir. `app/src/gradio_app.py`, aynı arayüzün okunabilir kaynak karşılığıdır.
-
-Yükleme sırası: taban model ve iki adaptör (`analiz_lora`, `yazi_lora`) → OCR motoru → mevzuat arama motoru. Notebook sonunda paylaşılabilir bir Gradio bağlantısı açılır.
+Canlı sistem `app/notebooks/Qwen1_RAG_Demo_Colab.ipynb` notebook'u ile çalıştırılır; GPU'lu bir ortam gerekir. `app/src/gradio_app.py`, aynı arayüzün okunabilir kaynak karşılığıdır. Notebook sonunda paylaşılabilir bir Gradio bağlantısı açılır.
 
 **Belediye Evrak Masası arayüzü** — solda belge, ortada memur kararı ve mevzuat maddeleri, sağda üretilen taslak:
 
@@ -423,63 +399,7 @@ Statik önizleme: `docs/demo_onizleme_mock.html`.
 
 ---
 
-## 8. Değerlendirme Sonuçları
-
-Tüm ölçümler eğitimde kullanılmayan sabit test kümeleri üzerinde yapıldı. Ham model ile ince ayarlı model her zaman **aynı test kümesinde** karşılaştırıldı.
-
-### 8.1. Okuyucu — OCR
-
-Test kümesi: 100 belge görseli, 21.571 Türkçe karakter.
-
-| Model | Karakter hata oranı (CER) ↓ | Türkçe karakter doğruluğu ↑ |
-|---|---:|---:|
-| Ham model (LoRA yok) | 0,4283 | %78,55 |
-| **İnce ayarlı (LoRA)** | **0,1076** | **%85,90** |
-
-İnce ayar, karakter hata oranını yaklaşık **dört kat** düşürdü. Kazanç en çok Türkçe'ye özgü harflerde (ı, ş, ğ, ö, ü, ç) görüldü: ham model bu harfleri sıklıkla ASCII karşılıklarına indirgerken, ince ayarlı model doğru üretiyor.
-
-### 8.2. Analiz — Görev 1
-
-Test kümesi: 241 kayıt.
-
-| Ölçüt | Ham model | İnce ayarlı (LoRA) | Kazanç |
-|---|---:|---:|---|
-| `document_type` doğruluğu | %70,1 | **%85,5** | +15,4 puan |
-| `sender_type` doğruluğu | %78,0 | **%95,4** | +17,4 puan |
-| `missing_information` doğruluğu | %74,3 | **%97,9** | +23,6 puan |
-
-İnce ayarlı model ayrıca `primary_topic` alanında, 58 başlıktan oluşan konu taksonomisi üzerinde **%72,2** doğruluğa ulaşıyor.
-
-`missing_information` doğruluğu, modelin evrakta eksik bilgi bulunup bulunmadığını doğru tespit etme oranıdır. Örneğin bir imar dilekçesinde ada veya parsel numarası yoksa modelin bunu eksik olarak işaretlemesi beklenir. En büyük kazanç bu alanda görüldü: ince ayarlı model neredeyse kusursuz çalışıyor.
-
-### 8.3. Yazıcı — Görev 2
-
-Test kümesi: 522 kayıt. Her iki model de aynı kayıtlarla değerlendirildi.
-
-| Model | Notebook | `response_type` doğruluğu ↑ |
-|---|---|---:|
-| Ham model (LoRA yok) | `03_evaluate_base_model.ipynb` | %50,0 |
-| **İnce ayarlı (LoRA)** | `02_evaluate_qwen25_7b.ipynb` | **%82,18** |
-
-İnce ayar, doğru yazı türünü seçme başarısını **+32,2 puan** artırdı. Ham model yedi yanıt türü arasında kararsız kalıp vakaların ancak yarısında doğru türü seçerken, ince ayarlı model kurum pratiğine uygun türü büyük çoğunlukla isabet ettiriyor.
-
-### 8.4. Mevzuat Arama Motoru
-
-Test kümesi: 126 kavramsal sorgudan oluşan, dondurulmuş bir referans kümesi. Tüm koşular aynı sorgular üzerinde, tek seferde tek değişken değiştirilerek yapıldı.
-
-| Koşu | Vektör modeli | H@1 ↑ | H@3 ↑ | H@5 ↑ | MRR ↑ | Kaçırma ↓ |
-|---|---|---:|---:|---:|---:|---:|
-| Taban | BGE-M3 | 59,5 | 84,1 | 92,9 | 0,729 | 6 |
-| **Üretim** | **BGE-M3 + sıralama düzeltmesi** | **69,0** | **86,5** | **92,9** | **0,789** | **4** |
-| Alternatif | multilingual-e5-large + sıralama düzeltmesi | 70,6 | 84,9 | 91,3 | 0,792 | 6 |
-
-En büyük kazancı **sıralama düzeltmesi** sağladı: konuyla yalnızca yüzeysel örtüşen maddeleri geriye iten bu düzenleme, ilk sıradaki isabeti 59,5'ten **69,0**'a çıkardı ve hiç sonuç bulunamayan sorgu sayısını 6'dan 4'e indirdi. Ek bir hesaplama maliyeti getirmiyor.
-
-Aynı koşullarda denenen `multilingual-e5-large` yalnızca H@1'de 1,6 puan öndeydi; H@3, H@5 ve kaçırma sayısında geride kaldı. Yazıcı ajan ilk üç maddeyi kullandığından üretime **BGE-M3** alındı.
-
----
-
-## 9. Kullanılan Modeller ve Lisanslar
+## 6. Kullanılan Modeller ve Lisanslar
 
 Şartnamenin 7. bölümü uyarınca üçüncü taraf model ağırlıkları depoya yüklenmez; erişim bağlantısı, sürüm ve lisans bilgisi burada belirtilir.
 
@@ -495,35 +415,21 @@ Aynı koşullarda denenen `multilingual-e5-large` yalnızca H@1'de 1,6 puan önd
 
 **Depoda bulunmayanlar:** model ağırlıkları, LoRA adaptörleri, üretilmiş arama indeksi ve tam boyutlu veri arşivleri. Bunların tamamı depodaki betik ve notebook'larla yeniden üretilebilir.
 
-Hiçbir veri kümesinde gerçek kişisel veri (TCKN, ad, adres, telefon) yer almaz; tüm örnekler sentetiktir.
-
 ---
 
-## 10. Ticarileşme ve Ölçeklenebilirlik
-
-**Gerçek bir ihtiyaca karşılık geliyor.** Türkiye'de 1.390'ın üzerinde belediye, her gün dilekçe, CİMER başvurusu ve kurum yazısı işliyor. Sistemin girdisi, süreç durumları ve çıktısı, kurumlarda hâlihazırda kullanılan Elektronik Belge Yönetim Sistemi (EBYS) akışlarıyla birebir örtüşüyor; entegrasyon bir API veya EBYS eklentisi olarak konumlanabilir.
-
-**Memur karar veriyor.** İnsan-döngüde tasarım, kurumsal güvenin ve mevzuat sorumluluğunun korunmasını sağlar. Model öneri üretir, işlemi memur onaylar. Bu, kamu kurumlarında benimsenmenin ön koşuludur.
-
-**Maliyet avantajı.** Analiz ve yazı ajanları tek bir taban modeli paylaşır, adaptörler çalışma anında takılır. İkinci bir 7B model belleğe yüklenmediği için bellek ihtiyacı yaklaşık yarıya iner ve tüm sistem tek GPU ile servis edilebilir. LoRA adaptörleri birkaç yüz megabaytlık dosyalardır; yeni bir birim veya mevzuat alanı eklemek için modelin baştan eğitilmesi gerekmez.
-
-**Veri kurumdan çıkmaz.** Yığının tamamı açık ağırlıklı modeller ve açık kaynak kütüphanelerle çalışır; kurum içi (on-premise) kurulabilir. Kamu verisinin işlendiği senaryolarda bu belirleyici bir gerekliliktir.
-
-**Genişleme yolu.** Mimari alan bağımsızdır. Mevzuat havuzu ve konu tablosu değiştirilerek il müdürlükleri, bakanlıklar veya farklı düzenleyici kurumların yazışma süreçlerine taşınabilir.
-
----
-
-## 11. Etik, Veri Kullanımı ve Kaynaklar
+## 7. Etik, Veri Kullanımı ve Kaynaklar
 
 **Lisans:** MIT — bkz. [LICENSE](LICENSE).
 
 **Veri kullanımı.** Şartname gereği gerçek kamu evrakı kullanılmamıştır:
 
 - **Görev 1 ve 2:** DeepSeek API'si ile üretilmiş kurgu dilekçeler ve resmî yazışma taslakları.
-- **OCR:** Hugging Face üzerindeki açık derlemeden alınan, kamuya açık yargı kararı metinleri. Bu metinler antetli sayfa olarak yeniden basılmıştır; depodaki görseller taranmış mahkeme evrakı değil, sentetik belge görüntüleridir. Belediye dilekçesi, CİMER kaydı veya EBYS evrakı hiçbir aşamada kullanılmamıştır.
+- **OCR:** Hugging Face üzerindeki açık derlemeden alınan, kamuya açık yargı kararı metinleri. Bu metinler antetli sayfa olarak yeniden basılmıştır; depodaki görseller taranmış resmî evrak değil, eğitim için üretilmiş sentetik belge görüntüleridir.
 - **Mevzuat:** Kamuya açık kanun ve yönetmelik metinleri.
 
-**Üçüncü taraf lisansları.** Kullanılan tüm modeller ve kütüphaneler kendi lisans koşullarına uygun biçimde kullanılmaktadır; ayrıntı için bkz. [9. bölüm](#9-kullanılan-modeller-ve-lisanslar).
+Hiçbir veri kümesinde gerçek kişisel veri (TCKN, ad, adres, telefon) yer almaz; tüm örnekler sentetiktir.
+
+**Üçüncü taraf lisansları.** Kullanılan tüm modeller ve kütüphaneler kendi lisans koşullarına uygun biçimde kullanılmaktadır; ayrıntı için bkz. [6. bölüm](#6-kullanılan-modeller-ve-lisanslar).
 
 **Kaynaklar**
 
