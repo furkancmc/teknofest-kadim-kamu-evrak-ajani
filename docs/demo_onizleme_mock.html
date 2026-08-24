@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<!--
+  Belediye Evrak Masası - STATİK ÖNİZLEME (mock veri)
+  Bu dosya yalnızca README ekran görüntüsü içindir; gerçek arayüz app/src/gradio_app.py
+  üzerinden vLLM + LoRA modelleriyle çalışır. Buradaki içerik temsili sahte veridir.
+-->
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Belediye Evrak Masası</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#e8eef3; font-family:Inter,"Segoe UI",sans-serif; color:#1a1a1a; }
+  .wrap { width:1500px; margin:0 auto; padding:18px 20px 30px; }
+  .h { color:#2b80b9; font-weight:700; font-size:11px; margin-bottom:8px; }
+  .card { background:#fff; border:1px solid #c5d0d8; border-radius:12px; padding:12px 14px; margin:0 0 10px; }
+  .col { background:#fff; border:1px solid #c5d0d8; border-radius:12px; padding:14px; }
+  .coltitle { color:#1a1a1a; font-weight:800; font-size:16px; margin-bottom:10px; }
+  .btn { background:#2b80b9; color:#fff; border:0; font-weight:700; border-radius:10px;
+         padding:11px 14px; width:100%; font-size:14px; cursor:pointer; margin-bottom:12px; }
+  .lbl { font-size:12px; color:#4a5560; font-weight:600; margin:10px 0 4px; }
+  .inp { background:#fff; color:#1a1a1a; border:1px solid #8a97a3; border-radius:8px;
+         padding:9px 11px; font-size:13px; width:100%; }
+  .board { display:flex; gap:8px; }
+  .bcard { flex:1; background:#fff; border:1px solid #8a97a3; border-radius:10px; padding:10px 12px; }
+  .bcard .t { color:#2b80b9; font-weight:800; font-size:12px; }
+  .bcard .d { color:#111; font-size:13px; margin-top:6px; line-height:1.4; }
+  .row3 { display:flex; gap:12px; align-items:flex-start; }
+  .c1 { flex:4; } .c2 { flex:5; } .c3 { flex:5; }
+  .ocr { white-space:pre-wrap; color:#111; font-size:12.5px; line-height:1.5; max-height:150px; overflow:auto; }
+  .an b { color:#111; } .an div { margin:0 0 6px; color:#111; font-size:13px; }
+  .ragcard { background:#f4f7f9; border:1px solid #8a97a3; border-radius:10px; padding:11px 13px; margin:0 0 9px; }
+  .ragcard .s { color:#2b80b9; font-weight:800; font-size:12px; }
+  .ragcard .k { font-weight:700; color:#111; font-size:13px; margin-top:2px; }
+  .ragcard .b { color:#333; font-size:12px; margin-top:2px; }
+  .ragcard .m { color:#111; font-size:12px; margin-top:6px; line-height:1.45; }
+  .tick { display:flex; align-items:center; gap:12px; min-height:44px; padding:11px 13px; border-radius:10px;
+          background:#fff; border:1px solid #6b7780; font-size:13px; font-weight:600; margin-bottom:8px; color:#111; }
+  .tick.on { background:#2b80b9; border-color:#2b80b9; color:#fff; }
+  .tick .box { width:20px; height:20px; border-radius:4px; border:2px solid #6b7780; flex-shrink:0;
+               display:flex; align-items:center; justify-content:center; }
+  .tick.on .box { background:#fff; border-color:#fff; color:#2b80b9; font-weight:900; }
+  .rad { display:flex; gap:8px; flex-wrap:wrap; }
+  .rad .o { padding:9px 13px; border-radius:10px; background:#fff; border:1px solid #6b7780;
+            font-size:13px; font-weight:600; color:#111; }
+  .rad .o.on { background:#2b80b9; border-color:#2b80b9; color:#fff; }
+  .letter { background:#fffdf8; border:1px solid #c4b89a; border-radius:4px; padding:22px 24px; color:#111;
+            font-family:"Times New Roman",Times,serif; font-size:14.5px; line-height:1.6; white-space:pre-wrap; min-height:360px; }
+  .docimg { height:210px; border:1px solid #c5d0d8; border-radius:8px; background:#fbfbf8; padding:16px 18px;
+            font-family:"Times New Roman",Times,serif; font-size:11px; color:#333; line-height:1.5; overflow:hidden; margin-bottom:12px; }
+  .docimg .ctr { text-align:center; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ÜST: AJAN MASASI -->
+  <div class="card">
+    <div class="h">AJAN MASASI</div>
+    <div class="board">
+      <div class="bcard"><div class="t">1. Okuyucu</div><div class="d">bitti · OCR 487 kr</div></div>
+      <div class="bcard"><div class="t">2. Analiz</div><div class="d">bitti · SAHIPSIZ_HAYVAN · eksik yok</div></div>
+      <div class="bcard"><div class="t">3. Mevzuat</div><div class="d">bitti · 3 sorgu, 4 madde</div></div>
+      <div class="bcard"><div class="t">Memur</div><div class="d">HITL: madde işaretle + süreç</div></div>
+      <div class="bcard"><div class="t">4. Yazıcı</div><div class="d">bitti · taslak hazır</div></div>
+    </div>
+  </div>
+
+  <div class="row3">
+
+    <!-- KOLON 1: BELGE -->
+    <div class="col c1">
+      <div class="coltitle">Belge</div>
+      <div class="docimg">
+        <div class="ctr">ÖRNEK BELEDİYE BAŞKANLIĞINA</div>
+        <br>
+        Cumhuriyet Mahallesi 1420. Sokak çevresinde son aylarda artan sayıda
+        sahipsiz sokak köpeği bulunmaktadır. Hayvanların bir kısmı hasta ve
+        bakımsız olup, çocuk parkı çevresinde toplanmaları güvenlik endişesi
+        oluşturmaktadır.
+        <br><br>
+        5199 sayılı Hayvanları Koruma Kanunu kapsamında gereğinin yapılmasını
+        saygılarımla arz ederim.
+        <br><br>
+        Ahmet Yılmaz<br>
+        Cumhuriyet Mah. 1420. Sok. No:5/3
+      </div>
+      <button class="btn">Belgeyi işle (OCR + analiz + RAG)</button>
+
+      <div class="card">
+        <div class="h">OCR</div>
+        <div class="ocr">ÖRNEK BELEDİYE BAŞKANLIĞINA
+
+Yaşadığım Cumhuriyet Mahallesi 1420. Sokak çevresinde son aylarda artan sayıda sahipsiz sokak köpeği bulunmaktadır. Söz konusu hayvanların bir kısmı hasta ve bakımsız olup, çocuk parkı çevresinde toplanmaları mahalle sakinlerinde güvenlik endişesi oluşturmaktadır.
+
+5199 sayılı Hayvanları Koruma Kanunu kapsamında; bu hayvanların belediyemizce toplanarak kısırlaştırılması, aşılanması, tedavi edilmesi ve rehabilite edildikten sonra alındıkları ortama bırakılması hususunda gereğinin yapılmasını saygılarımla arz ederim.
+
+Ahmet Yılmaz
+Cumhuriyet Mah. 1420. Sok. No:5/3
+0532 *** ** **</div>
+      </div>
+
+      <div class="card an">
+        <div class="h">ANALİZ</div>
+        <div><b>Belge türü:</b> TALEP_DILEKCE_BASVURUSU</div>
+        <div><b>Gönderen:</b> VATANDAS</div>
+        <div><b>Konu:</b> SAHIPSIZ_HAYVAN</div>
+        <div><b>Talep:</b> Sahipsiz sokak köpeklerinin toplanması, kısırlaştırılması, aşılanması ve rehabilite edilmesi</div>
+        <div><b>Özet:</b> Vatandaş, mahallesindeki sahipsiz sokak köpeklerinin 5199 sayılı Kanun kapsamında toplanıp kısırlaştırılmasını ve rehabilite edilmesini talep etmektedir.</div>
+      </div>
+    </div>
+
+    <!-- KOLON 2: MEMUR + MEVZUAT -->
+    <div class="col c2">
+      <div class="coltitle">Memur + mevzuat</div>
+      <div class="lbl">Hedef birim <span style="color:#2b80b9">(konu → birim tablosundan otomatik)</span></div>
+      <input class="inp" value="Veteriner İşleri Müdürlüğü" readonly>
+      <div class="lbl">RAG sorguları</div>
+      <input class="inp" value="sahipsiz hayvan toplama barınak 5199 | kısırlaştırma rehabilitasyon | sokak hayvanı müdahale" readonly>
+
+      <div class="lbl">Mevzuat maddeleri</div>
+      <div class="ragcard">
+        <div class="s">1. sıra</div>
+        <div class="k">5199 sayılı Hayvanları Koruma Kanunu — Madde 6</div>
+        <div class="b">Sahipsiz ve güçten düşmüş hayvanların korunması</div>
+        <div class="m">Sahipsiz ya da güçten düşmüş hayvanların en hızlı şekilde yerel yönetimlerce kurulan hayvan bakımevlerine götürülmesi zorunludur; öncelikle müşahede yerlerinde tutularak gerekli müdahale yapılır.</div>
+      </div>
+      <div class="ragcard">
+        <div class="s">2. sıra</div>
+        <div class="k">Sahipsiz Hayvanların Kontrolü Yönetmeliği — Madde 7</div>
+        <div class="b">Toplama, kısırlaştırma ve işaretleme</div>
+        <div class="m">Sahipsiz hayvanlar toplanarak kısırlaştırılır, aşılanır, işaretlenir ve rehabilite edildikten sonra alındıkları ortama bırakılır.</div>
+      </div>
+      <div class="ragcard">
+        <div class="s">3. sıra</div>
+        <div class="k">5996 sayılı Veteriner Hizmetleri Kanunu — Madde 4</div>
+        <div class="b">Hayvan sağlığı ve koruyucu tedbirler</div>
+      </div>
+
+      <div class="lbl">Yazıya gidecek maddeler</div>
+      <div class="tick on"><div class="box">✓</div><div>1. 5199 sayılı Hayvanları Koruma Kanunu — Madde 6</div></div>
+      <div class="tick on"><div class="box">✓</div><div>2. Sahipsiz Hayvanların Kontrolü Yönetmeliği — Madde 7</div></div>
+      <div class="tick"><div class="box"></div><div>3. 5996 sayılı Veteriner Hizmetleri Kanunu — Madde 4</div></div>
+
+      <div class="lbl">Süreç</div>
+      <div class="rad">
+        <div class="o on">İnceleniyor</div>
+        <div class="o">Tamamlandı</div>
+        <div class="o">Eksik bilgi bekleniyor</div>
+        <div class="o">Reddedildi</div>
+        <div class="o">Yönlendirildi</div>
+      </div>
+
+      <div class="lbl">Aksiyonlar (satır satır)</div>
+      <textarea class="inp" rows="2" readonly>Başvuru kayda alındı
+Veteriner İşleri ekibi bölgeye yönlendirildi</textarea>
+      <div class="lbl">Süreç sonucu</div>
+      <input class="inp" value="Başvurunuz incelemeye alınmış olup ekiplerimiz bölgede çalışma başlatmıştır." readonly>
+    </div>
+
+    <!-- KOLON 3: TASLAK -->
+    <div class="col c3">
+      <div class="coltitle">Taslak</div>
+      <button class="btn">Taslak üret</button>
+      <div class="letter">T.C.
+ÖRNEK BELEDİYE BAŞKANLIĞI
+Veteriner İşleri Müdürlüğü
+
+Sayı : E-2026-4471
+Konu : Sahipsiz Hayvanların Toplanması Hk.
+
+Sayın Ahmet Yılmaz,
+
+İlgi : 23.08.2026 tarihli başvurunuz.
+
+Cumhuriyet Mahallesi 1420. Sokak çevresinde bulunan sahipsiz sokak hayvanlarına ilişkin talebiniz Müdürlüğümüzce değerlendirilmiştir.
+
+5199 sayılı Hayvanları Koruma Kanunu'nun 6. maddesi ile Sahipsiz Hayvanların Kontrolü Yönetmeliği'nin 7. maddesi uyarınca; söz konusu hayvanların ekiplerimizce toplanarak kısırlaştırılması, aşılanması ve gerekli tedavileri yapıldıktan sonra rehabilite edilerek alındıkları ortama bırakılması işlemleri programa alınmıştır.
+
+Bölgede yürütülecek çalışma takvimine ilişkin olarak tarafınıza ayrıca bilgilendirme yapılacaktır.
+
+Bilgilerinize rica ederim.
+
+
+                                        [e-imzalıdır]
+                                        Veteriner İşleri Müdürü</div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

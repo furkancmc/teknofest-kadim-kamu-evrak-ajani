@@ -1,0 +1,26 @@
+# =============================================================================
+# Belediye Evrak Ajani - ust duzey bagimliliklar
+# Her modulun kendi ihtiyaci alt klasorlerdeki requirements dosyalarinda da
+# ayrica listelenmistir (analiz_qwen1/, mevzuat_rag/, QWEN_VL_ocr/).
+# =============================================================================
+
+# --- Sentetik veri uretimi (Qwen1 + Qwen2 pipeline, DeepSeek API) ---
+openai>=1.30.0
+
+# --- RAG mevzuat arama motoru ---
+numpy
+rank-bm25
+sentence-transformers>=3.0
+transformers>=4.44
+torch>=2.4
+
+# --- Ince ayar (LoRA) ve degerlendirme (Colab icinde de kurulur) ---
+peft>=0.11
+accelerate>=0.30
+datasets>=2.19
+jiwer>=3.0          # OCR icin CER metrigi
+qwen-vl-utils       # Qwen2.5-VL gorsel on-isleme
+
+# --- Demo arayuzu ---
+gradio>=4.0
+vllm>=0.5.0         # canli servis (Colab A100)

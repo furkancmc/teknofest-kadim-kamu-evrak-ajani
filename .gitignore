@@ -1,0 +1,54 @@
+# ---- Ortam / gizli anahtarlar ----
+.env
+*.env
+!.env.example
+.cache/
+.cache/deepseek_cache/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# ---- Model agirliklari ve buyuk ciktilar (repoya YUKLENMEZ) ----
+# Sartname Bolum 7: ucuncu taraf acik-agirlik modelleri depoya konmaz,
+# yalnizca erisim baglantisi + surum + lisans + kullanim dokumantasyonda belirtilir.
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.gguf
+lora_adapter_qwen1/
+lora_adapter_qwen2/
+qwen_vl_7b_model/
+qwen_vl_7b_lora_finetuned/
+merged_model_16bit/
+
+# ---- RAG uretilen indeks (repoya konmaz, yeniden uretilir) ----
+rag/out/
+**/out/vectors/
+*.npy
+
+# ---- OCR veri setleri / gorseller (buyuk) ----
+dataset_1000/
+dataset_1000.zip
+turkish_law_dataset/
+*.zip
+
+# ---- Tam egitim verisi (repoda yalnizca ornek tutulur; bkz. yazi_qwen2/veri) ----
+qwen2_train_updated.jsonl
+qwen2_val_updated.jsonl
+qwen2_test_updated.jsonl
+
+# ---- Yerel degerlendirme ciktilari ----
+test_eval_results.json
+**/test_eval_results.json
+
+# ---- Isletim sistemi ----
+.DS_Store
+Thumbs.db
+desktop.ini
