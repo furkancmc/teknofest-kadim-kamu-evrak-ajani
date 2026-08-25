@@ -206,6 +206,12 @@ Gerçek tarama koşullarını temsil etmek için görseller dört bozulma seviye
 
 **Çıktı alanları:** `document_type`, `sender_type`, `primary_topic`, `requested_action`, `key_information`, `missing_information`, `summary`.
 
+**Kabul edilen belge türleri (`document_type`, 5):** `TALEP_DILEKCE_BASVURUSU`, `BILGI_TALEBI`, `SIKAYET_IHBAR_BASVURUSU`, `ITIRAZ_IDARI_BASVURU`, `KURUMLAR_ARASI_RESMI_YAZI`.
+
+**Gönderen türleri (`sender_type`, 4):** `VATANDAS`, `KAMU_KURUMU`, `OZEL_KURULUS`, `YARGI_MERCII`.
+
+**Çıkarılan bilgi unsurları (`key_information`, 16 tip):** `PERSON`, `ORGANIZATION`, `LOCATION`, `CONTACT`, `DATE`, `REFERENCE_DATE`, `DEADLINE`, `DOCUMENT_NO`, `REFERENCE_NO`, `APPLICATION_NO`, `CASE_NO`, `AMOUNT`, `INCOME_INFORMATION`, `HOUSEHOLD_INFORMATION`, `EVENT_DETAIL`, `OTHER`.
+
 **Veri:** 11 müdürlük için ayrı ayrı yazılmış `generate_dataset_*.py` betikleri, her birimin kendi şemasına uygun sentetik evrak üretir. Toplam **2.444 evrak**, **58 konu**, **11 müdürlük**:
 
 | Küme | Kayıt |
