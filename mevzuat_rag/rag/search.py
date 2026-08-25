@@ -1,7 +1,8 @@
 """Arama servisi — Qwen ile yazı ajanları arasındaki katman.
 
-Boru hattı (ölçümle seçildi, bkz. README):
-    sorgu -> [dense bge-m3 | BM25] -> RRF -> bge-reranker-v2-m3 -> maddeler
+Boru hattı:
+    sorgu -> [dense bge-m3 | BM25] -> RRF -> bge-reranker-v2-m3
+    -> kavramsal sorguda geçici/amaç/kapsam/tanım cezası + madde başlığı artışı
 
 Qwen tek sorgu değil 3-5 `rag_queries` üretiyor; `search()` liste alır, her
 sorguyu ayrı çalıştırır, sonuçları RRF ile birleştirir ve AYNI MADDEYİ
@@ -29,17 +30,15 @@ import numpy as np
 from . import rerankers
 from .config import CHUNKS_FILE, OUT_DIR, RERANK_BATCH_SIZE, RERANK_CANDIDATES
 from .embed.models import Embedder
-from .index.bm25 import BM25Index, rrf_fuse
+from .index.bm25 import STOP, BM25Index, rrf_fuse, tokenize, tr_lower
 from .scope import classify_scope
 
 VECTOR_DIR = OUT_DIR / "vectors"
 RETRIEVER = "bge-m3"  # MIT lisanslı ve tam boru hattında jina-v3'ten iyi
-# Taban bge-reranker. rag/out/reranker_lora varsa onu kullan.
-RERANKER = (
-    "bge-m3-lora"
-    if (OUT_DIR / "reranker_lora" / "adapter_config.json").is_file()
-    else "bge-m3"
-)
+RERANKER = "bge-m3"  # BAAI/bge-reranker-v2-m3
+BOILERPLATE_FACTOR = 0.12
+TITLE_BOOST_PER_HIT = 0.10
+TITLE_BOOST_CAP = 3
 POOL = 50  # füzyondan önce her yoldan alınan aday
 UNIT_BOOST = 0.15  # yalnız `unit` verilirse uygulanır
 RERANK_RETRIEVAL_WEIGHT = 0.25  # holdout deneyinde seçildi; atıfta uygulanmaz
@@ -55,6 +54,61 @@ _ARTICLE_REF_RE = re.compile(
 def is_citation_query(query: str) -> bool:
     """Açık madde numarası isteyen sorguları kavramsal rotadan ayırır."""
     return bool(_ARTICLE_REF_RE.search(query))
+
+
+_META_TITLES = frozenset(
+    {
+        "amaç",
+        "kapsam",
+        "tanımlar",
+        "tanım",
+        "tanım ve kısaltmalar",
+        "dayanak",
+        "amaç ve kapsam",
+        "konu",
+        "genel esaslar",
+    }
+)
+
+
+def is_boilerplate_article(chunk: dict) -> bool:
+    """Geçici madde ve Amaç/Kapsam/Tanımlar/Dayanak — kavramsal sorguda çeldirici."""
+    label = tr_lower(chunk.get("article_label") or "")
+    kind = tr_lower(chunk.get("article_kind") or "")
+    if "geçici" in label or kind in {"gecici", "geçici", "temporary"}:
+        return True
+    title = tr_lower((chunk.get("article_title") or "").strip())
+    return title in _META_TITLES
+
+
+def article_rank_factor(queries: str | list[str], chunk: dict) -> float:
+    """Kavramsal sorguda çeldirici maddeyi düşür, başlık örtüşmesini hafifçe yükselt.
+
+    Atıf sorgusuna dokunulmaz (madde numarası isteniyorsa geçici madde de gelebilir).
+    """
+    if isinstance(queries, str):
+        queries = [queries]
+    queries = [q for q in queries if q and q.strip()]
+    if not queries or any(is_citation_query(q) for q in queries):
+        return 1.0
+
+    blob = tr_lower(" ".join(queries))
+    label = tr_lower(chunk.get("article_label") or "")
+    factor = 1.0
+    if is_boilerplate_article(chunk):
+        if "geçici" in label and "geçici" in blob:
+            pass
+        else:
+            factor *= BOILERPLATE_FACTOR
+
+    title = chunk.get("article_title") or ""
+    if title.strip() and tr_lower(title.strip()) not in _META_TITLES:
+        q_toks = {t for t in tokenize(" ".join(queries)) if t not in STOP}
+        t_toks = {t for t in tokenize(title) if t not in STOP}
+        hits = len(q_toks & t_toks)
+        if hits:
+            factor *= 1.0 + TITLE_BOOST_PER_HIT * min(hits, TITLE_BOOST_CAP)
+    return factor
 
 
 def blend_reranker_with_retrieval(
@@ -156,6 +210,7 @@ class Searcher:
         reranker: str = RERANKER,
         candidates: int = RERANK_CANDIDATES,
         retrieval_weight: float = RERANK_RETRIEVAL_WEIGHT,
+        article_rank: bool = True,
     ) -> None:
         self.retriever = retriever
         self.reranker_name = reranker
@@ -164,6 +219,7 @@ class Searcher:
         # yenilir. Bu yüzden ikisi de sabit değil, kurucu parametresi.
         self.candidates = candidates
         self.retrieval_weight = retrieval_weight
+        self.article_rank = article_rank
         self.chunks = [json.loads(l) for l in CHUNKS_FILE.open(encoding="utf-8")]
         self.by_id = {c["chunk_id"]: c for c in self.chunks}
         self.order = json.loads((VECTOR_DIR / "chunk_ids.json").read_text(encoding="utf-8"))
@@ -192,6 +248,11 @@ class Searcher:
         _ = self.embedder, self.bm25
         self.reranker.load()
 
+    def _rank_factor(self, queries: str | list[str], chunk: dict) -> float:
+        if not self.article_rank:
+            return 1.0
+        return article_rank_factor(queries, chunk)
+
     # --- tek sorgu --------------------------------------------------------
 
     def _candidates(self, query: str) -> list[str]:
@@ -213,7 +274,10 @@ class Searcher:
         final_ids = blend_reranker_with_retrieval(
             query, reranked_ids, ids, weight=self.retrieval_weight
         )
-        return [(cid, score_by_id[cid]) for cid in final_ids]
+        return sorted(
+            [(cid, score_by_id[cid]) for cid in final_ids],
+            key=lambda item: -(item[1] * self._rank_factor(query, self.by_id[item[0]])),
+        )
 
     # --- çok sorgu --------------------------------------------------------
 
@@ -272,6 +336,7 @@ class Searcher:
             adjusted = rrf_score
             if unit and unit in c["units"]:
                 adjusted += UNIT_BOOST * rrf_score
+            adjusted *= self._rank_factor(queries, c)
             ranking_score[cid] = adjusted
 
         ranked_candidates = sorted(ranking_score, key=lambda cid: -ranking_score[cid])
@@ -347,6 +412,7 @@ class Searcher:
         for cid in selected:
             c = self.by_id[cid]
             reranker_score = best_score[cid]
+            display_score = reranker_score * self._rank_factor(queries, c)
 
             law = f"{c['law_no']} sayılı {c['canonical_title']}" if c["law_no"] else c["canonical_title"]
             body = c["raw_text"].strip()
@@ -362,7 +428,7 @@ class Searcher:
                     sayfa=f"{c['page_start']}-{c['page_end']}" if c["page_start"] != c["page_end"] else str(c["page_start"]),
                     kaynak_dosya=c["source_files"][0],
                     birimler=c["units"],
-                    skor=reranker_score,
+                    skor=display_score,
                     reranker_skoru=reranker_score,
                     rrf_skoru=raw_rrf[cid],
                     siralama_skoru=ranking_score[cid],
@@ -370,8 +436,8 @@ class Searcher:
                 )
             )
 
-        # Sonuçlar kullanıcının ve arayüzün gördüğü gerçek eşleşme (reranker)
-        # skoruna göre en ilgiliden en az ilgiliye (en yüksekten en düşüğe) sıralanır.
+        # Kavramsal sorguda skor = ham reranker × madde cezası/başlık artışı.
+        # Atıfta çarpan 1 olduğu için sıra ham reranker ile aynı kalır.
         out.sort(key=lambda p: -p.skor)
 
         top_score = out[0].reranker_skoru if out else None
