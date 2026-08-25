@@ -1,7 +1,6 @@
 # =============================================================================
 # KADIM (Kamu Dilekce ve Inceleme Mekanizmasi) - ust duzey bagimliliklar
-# Her modulun kendi ihtiyaci alt klasorlerdeki requirements dosyalarinda da
-# ayrica listelenmistir (analiz_qwen1/, mevzuat_rag/, QWEN_VL_ocr/).
+# mevzuat_rag/ kendi requirements dosyasina sahiptir (RAG bagimliliklari).
 # =============================================================================
 
 # --- Sentetik veri uretimi (Qwen1 + Qwen2 pipeline, DeepSeek API) ---
