@@ -57,12 +57,16 @@ textarea, input[type="text"] {
   max-height: none !important; overflow: visible !important; word-break: break-word; }
 .rag-score { white-space: nowrap !important; overflow: visible !important;
   min-width: 14em; display: inline-block; }
-.rag-tog { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
-.rag-lab { color: #2b80b9 !important; font-weight: 700 !important; cursor: pointer;
-  display: inline-block; margin-top: 8px; }
-.rag-body { max-height: 11em; overflow: auto; }
-.rag-tog:checked ~ .rag-body, .rag-card:has(.rag-tog:checked) .rag-body { max-height: none !important; }
-.rag-card:has(.rag-tog:checked) .rag-lab { visibility: hidden; }
+.rag-preview { white-space: pre-wrap; max-height: 11em; overflow: auto; }
+.rag-full { margin-top: 8px; }
+.rag-full > summary { color: #2b80b9 !important; font-weight: 700 !important;
+  cursor: pointer; list-style: none; }
+.rag-full > summary::-webkit-details-marker { display: none; }
+.rag-sum-close { display: none; }
+.rag-full[open] > summary .rag-sum-open { display: none; }
+.rag-full[open] > summary .rag-sum-close { display: inline; }
+.rag-card:has(details[open]) .rag-preview { display: none; }
+.rag-full-body { white-space: pre-wrap; margin-top: 8px; }
 """
 
 JS_LIGHT = """
@@ -124,12 +128,6 @@ def agent_board_html() -> str:
     return _h("Ajan masası", row)
 
 
-APP_HEADER = (
-    '<div style="display:flex;align-items:baseline;gap:12px;padding:2px 4px 12px">'
-    '<div style="font-size:23px;font-weight:800;color:#1a1a1a;letter-spacing:.6px">KADİM</div>'
-    '<div style="font-size:13px;font-weight:600;color:#2b80b9">Kamu Dilekçe ve İnceleme Mekanizması</div>'
-    '</div>'
-)
 EMPTY_BOARD = agent_board_html()
 EMPTY_RAG = _h("Mevzuat", "Henüz yok. Belgeyi işle.")
 EMPTY_LETTER = (
@@ -165,18 +163,18 @@ def provisions_cards_html(plist: list) -> str:
     cards = []
     for i, d in enumerate(plist, 1):
         metin = str(d.get("metin") or "").strip() or "—"
-        uid = f"rag-full-{i}"
-        # Tam metin bu kartın kendi kutusunda; details sonraki maddeleri yutuyordu
-        extra = ""
-        if len(metin) > lim:
-            extra = (
-                f'<input class="rag-tog" type="checkbox" id="{uid}">'
-                f'<label class="rag-lab" for="{uid}">Tam metni göster</label>'
-            )
-        govde = extra + (
-            f'<div class="ink rag-body" style="white-space:pre-wrap;color:#111111;font-size:13px;'
+        govde = (
+            f'<div class="ink rag-preview" style="color:#111111;font-size:13px;'
             f'line-height:1.5">{_esc(metin)}</div>'
         )
+        if len(metin) > lim:
+            govde += (
+                f'<details class="rag-full">'
+                f'<summary><span class="rag-sum-open">Tam metni göster</span>'
+                f'<span class="rag-sum-close">Kapat</span></summary>'
+                f'<div class="ink rag-full-body" style="color:#111111;font-size:13px;'
+                f'line-height:1.5">{_esc(metin)}</div></details>'
+            )
         cards.append(
             f'<div class="rag-card ink" style="background:#f4f7f9;border:1px solid #8a97a3;'
             f'border-radius:10px;padding:12px 14px;margin:0 0 10px;color:#111111">'
@@ -199,21 +197,77 @@ def letter_html(text: str) -> str:
     )
 
 
+def _fmt_info_html(val) -> str:
+    """key_information / missing_information: liste veya sözlük."""
+    items = []
+    if val is None or val == "":
+        return "—"
+    if isinstance(val, str):
+        s = val.strip()
+        return _esc(s) if s and s.lower() not in {"yok", "-", "yok."} else "—"
+    if isinstance(val, dict):
+        for k, v in val.items():
+            vs = "" if v is None else str(v).strip()
+            if vs and vs.lower() not in {"yok", "-", "yok."}:
+                items.append((str(k), vs))
+    elif isinstance(val, list):
+        for it in val:
+            if isinstance(it, dict):
+                t = str(it.get("type") or it.get("key") or "").strip()
+                v = str(it.get("value") or it.get("val") or "").strip()
+                if t or (v and v.lower() not in {"yok", "-", "yok."}):
+                    items.append((t or "bilgi", v or "—"))
+            else:
+                s = str(it).strip()
+                if s and s.lower() not in {"yok", "-", "yok."}:
+                    items.append(("", s))
+    else:
+        return _esc(str(val))
+    if not items:
+        return "—"
+    bits = []
+    for k, v in items:
+        if k:
+            bits.append(
+                f'<div class="ink" style="margin:2px 0 0 8px;color:#111111">'
+                f'• <b>{_esc(k)}</b>: {_esc(v)}</div>'
+            )
+        else:
+            bits.append(
+                f'<div class="ink" style="margin:2px 0 0 8px;color:#111111">• {_esc(v)}</div>'
+            )
+    return "".join(bits)
+
+
 def analysis_html(analysis: dict) -> str:
     if not isinstance(analysis, dict) or analysis.get("_parse_error"):
         return _h("Analiz", "Yok.")
-    rows = [
+    simple = [
         ("Belge türü", analysis.get("document_type")),
         ("Gönderen", analysis.get("sender_type")),
         ("Konu", analysis.get("primary_topic")),
-        ("Talep", analysis.get("requested_action")),
+        ("Talep (requested_action)", analysis.get("requested_action")),
         ("Özet", analysis.get("summary")),
     ]
     bits = "".join(
         f'<div class="ink" style="margin:0 0 6px;color:#111111"><b>{_esc(k)}:</b> {_esc(v or "—")}</div>'
-        for k, v in rows
+        for k, v in simple
+    )
+    bits += (
+        f'<div class="ink" style="margin:8px 0 4px;color:#111111"><b>Ana bilgiler (key_information):</b></div>'
+        + _fmt_info_html(analysis.get("key_information"))
+        + f'<div class="ink" style="margin:8px 0 4px;color:#111111"><b>Eksik bilgi (missing_information):</b></div>'
+        + _fmt_info_html(analysis.get("missing_information"))
     )
     return _h("Analiz", bits)
+
+
+def response_type_html(rt: str) -> str:
+    t = (rt or "").strip() or "—"
+    return _h("Yazı türü (response_type)", f'<div class="ink" style="font-weight:700;color:#111111">{_esc(t)}</div>')
+
+
+EMPTY_RESP = response_type_html("")
 
 
 def ocr_html(text: str) -> str:
@@ -235,7 +289,20 @@ def lookup_unit(analysis: dict) -> str:
 
 
 def _cite_label(d: dict) -> str:
-    return f"{(d.get('kanun') or '').strip()} {(d.get('madde') or '').strip()}".strip()
+    """Kanun adı + Madde no + madde başlığı (hardcode atıfın havada kalmaması için)."""
+    kanun = (d.get("kanun") or "").strip()
+    madde = (d.get("madde") or "").strip()
+    baslik = (d.get("baslik") or "").strip()
+    if baslik in {"-", "—", "–", "yok", "Yok"}:
+        baslik = ""
+    if madde and not re.search(r"(?i)\bmadde\b", madde) and re.search(r"\d+", madde):
+        madde = f"Madde {madde}"
+    bits = [x for x in (kanun, madde) if x]
+    if baslik:
+        blob = " ".join(bits).lower()
+        if baslik.lower() not in blob and len(baslik) <= 90:
+            bits.append(f"({baslik})")
+    return " ".join(bits).strip()
 
 
 def _strip_dative_unit(s: str) -> str:
@@ -280,11 +347,58 @@ def _citizen_tokens(analysis: dict) -> list:
     return toks
 
 
+_EK_HEAD = re.compile(
+    r"(?i)^\s*ek(?:ler| listesi)?\s*:?\s*(.*)$"
+)
+
+
+def _is_ek_item_line(s: str) -> bool:
+    t = (s or "").strip()
+    if not t:
+        return False
+    if t.startswith(("-", "•", "*", "–")) and re.search(
+        r"(?i)(dilekçe|sayfa|evrak|fotokopi|başvuru)", t
+    ):
+        return True
+    m = _EK_HEAD.match(t)
+    if not m:
+        return False
+    rest = (m.group(1) or "").strip()
+    return (not rest) or bool(re.search(r"(?i)(dilekçe|sayfa|evrak|fotokopi|başvuru)", rest))
+
+
+def _strip_trailing_ek(text: str) -> str:
+    """Modelin yazı sonuna yapıştırdığı sahte Ek / dilekçe listesini kes."""
+    lines = (text or "").rstrip().splitlines()
+    while lines and (not lines[-1].strip() or _is_ek_item_line(lines[-1])):
+        lines.pop()
+    close_i = None
+    for i, ln in enumerate(lines):
+        low = ln.strip().lower()
+        if low.startswith(("saygılarımla", "saygılar", "saygilar", "bilgilerinize", "gereğini", "geregini")):
+            close_i = i
+        elif "rica ederim" in low or "arz ederim" in low:
+            close_i = i
+    if close_i is not None:
+        head, tail = lines[: close_i + 1], lines[close_i + 1 :]
+        out_tail, skipping = [], False
+        for ln in tail:
+            if _is_ek_item_line(ln) or (skipping and not ln.strip()):
+                skipping = True
+                continue
+            if skipping and ln.strip().startswith(("-", "•", "*", "–")):
+                continue
+            skipping = False
+            out_tail.append(ln)
+        lines = head + out_tail
+    return "\n".join(lines).rstrip()
+
+
 def polish_official_letter(letter: str, payload: dict, analysis: dict, sender_unit: str) -> str:
     """Belediye → vatandaş: yanlış antet/hitap ve vatandaş imzasını kes.
 
-    ensure_legislation_in_draft'tan ÖNCE çağrılmalı; yoksa atıf cümlesi
-    imza bloğunu sona ittiği için imza silinemez.
+    ensure_legislation_in_draft'tan ÖNCE çağrılmalı; yoksa atıf
+    kapanış/imza satırlarına yapışır.
     """
     text = (letter or "").strip()
     sender = _strip_dative_unit(sender_unit or (payload or {}).get("target_unit") or "")
@@ -340,11 +454,51 @@ def polish_official_letter(letter: str, payload: dict, analysis: dict, sender_un
             continue
         break
     text = "\n".join(out_lines).rstrip()
+    text = _strip_trailing_ek(text)
 
     if (payload or {}).get("process_status") == "YONLENDIRILDI" and dest:
         if dest.lower() not in text.lower():
             text = text.rstrip() + f"\n\nBaşvurunuz {dest} birimine yönlendirilmiştir.\n"
     return text
+
+
+def _is_closing_line(ln: str) -> bool:
+    low = (ln or "").strip().lower()
+    if not low:
+        return False
+    if low.startswith(("saygılarımla", "saygılar", "saygilar", "bilgilerinize", "gereğini", "geregini")):
+        return True
+    return "rica ederim" in low or "arz ederim" in low
+
+
+def _insert_cite_into_body(draft: str, sentence: str) -> str:
+    """Atıfı yazı sonuna ekleme; kapanıştan önceki son gövde cümlesine kat."""
+    text = (draft or "").rstrip()
+    sent = (sentence or "").strip()
+    if sent and sent[-1] not in ".!?":
+        sent += "."
+    if not sent:
+        return (draft or "")
+    if not text:
+        return sent + "\n"
+    lines = text.splitlines()
+    close_i = next((i for i, ln in enumerate(lines) if _is_closing_line(ln)), None)
+    body_end = close_i if close_i is not None else len(lines)
+    j = body_end - 1
+    while j >= 0 and not lines[j].strip():
+        j -= 1
+    if j < 0:
+        return text + "\n\n" + sent + "\n"
+    prev = lines[j].rstrip()
+    plow = prev.lower()
+    if plow.startswith(("sayın", "ilgi", "konu:", "t.c")) or plow in {"t.c.", "tc"}:
+        lines.insert(j + 1, "")
+        lines.insert(j + 2, sent)
+    else:
+        if prev[-1:] not in ".!?":
+            prev += "."
+        lines[j] = prev + " " + sent
+    return "\n".join(lines).rstrip() + "\n"
 
 
 def ensure_legislation_in_draft(draft: str, chosen: list) -> str:
@@ -367,7 +521,9 @@ def ensure_legislation_in_draft(draft: str, chosen: list) -> str:
     cites = ", ".join(_cite_label(d) for d in chosen[:2] if _cite_label(d))
     if not cites:
         return draft or ""
-    return (draft or "").rstrip() + f"\n\nİşlemler {cites} hükümleri uyarınca yürütülmüştür.\n"
+    return _insert_cite_into_body(
+        draft, f"İşlemler {cites} uyarınca yürütülmüştür."
+    )
 
 
 def intake_handler(image):
@@ -376,6 +532,7 @@ def intake_handler(image):
         EMPTY_BOARD, ocr_html("Önce görsel yükle."), analysis_html({}), "{}",
         "", "Yazı İşleri Müdürlüğü", EMPTY_RAG, empty_cb,
         "INCELEMEDE", gr.update(value="", visible=False), "", "", None, None, [],
+        EMPTY_RESP,
     )
     if image is None:
         return empty
@@ -390,6 +547,7 @@ def intake_handler(image):
             EMPTY_BOARD, ocr_html(err), analysis_html({}), "{}",
             "", "Yazı İşleri Müdürlüğü", _h("Hata", _esc(err)), empty_cb,
             "INCELEMEDE", gr.update(value="", visible=False), "", "", None, None, [],
+            EMPTY_RESP,
         )
     plist = [_prov_to_dict(p) for p in (provisions or [])]
     labels = [_prov_label(d, i) for i, d in enumerate(plist, 1)]
@@ -407,6 +565,7 @@ def intake_handler(image):
         gr.update(choices=labels, value=default_sel),
         default_proc, gr.update(value="", visible=False), "", "",
         ocr_text, analysis, plist,
+        EMPTY_RESP,
     )
 
 
@@ -416,7 +575,7 @@ def _toggle_yon(st):
 
 def draft_handler(selected, process_status, performed_raw, result_info, unit, yon_unit, ocr_s, analysis_s, plist):
     if not analysis_s:
-        return "{}", EMPTY_LETTER, "{}", EMPTY_BOARD
+        return "{}", EMPTY_LETTER, "{}", EMPTY_BOARD, EMPTY_RESP
     actions = [x.strip() for x in (performed_raw or "").split("\n") if x.strip()]
     selected = selected or []
     chosen = []
@@ -452,7 +611,7 @@ def draft_handler(selected, process_status, performed_raw, result_info, unit, yo
     except Exception:
         err = traceback.format_exc()
         print(err, flush=True)
-        return json.dumps(payload_in, ensure_ascii=False, indent=2), letter_html("HATA:\n" + err), json.dumps(payload_in, ensure_ascii=False, indent=2), EMPTY_BOARD
+        return json.dumps(payload_in, ensure_ascii=False, indent=2), letter_html("HATA:\n" + err), json.dumps(payload_in, ensure_ascii=False, indent=2), EMPTY_BOARD, EMPTY_RESP
     parsed = try_parse_json(raw) or {}
     letter = extract_official_letter(raw)
     if payload_in["process_status"] == "EKSIK_BILGI_BEKLENIYOR" and isinstance(parsed, dict):
@@ -470,6 +629,7 @@ def draft_handler(selected, process_status, performed_raw, result_info, unit, yo
         letter_html(letter),
         json.dumps(payload_in, ensure_ascii=False, indent=2),
         agent_board_html(),
+        response_type_html(out_show.get("response_type") or ""),
     )
 
 
@@ -521,7 +681,7 @@ try:
 except Exception:
     pass
 
-_kw = dict(title="KADİM — Evrak Masası", theme=_theme, css=WHITE_CSS)
+_kw = dict(title="Belediye Evrak Masası", theme=_theme, css=WHITE_CSS)
 try:
     demo_ctx = gr.Blocks(js=JS_LIGHT, head='<meta name="color-scheme" content="light">', fill_width=True, **_kw)
 except TypeError:
@@ -531,7 +691,6 @@ except TypeError:
         demo_ctx = gr.Blocks(**_kw)
 
 with demo_ctx as demo:
-    gr.HTML(APP_HEADER)
     agent_md = gr.HTML(EMPTY_BOARD)
     st_ocr = gr.State("")
     st_analysis = gr.State(None)
@@ -563,6 +722,7 @@ with demo_ctx as demo:
         with gr.Column(elem_classes=["masa-col"], scale=5, min_width=360):
             gr.HTML('<div style="color:#1a1a1a;font-weight:800;font-size:16px">Taslak</div>')
             btn_draft = gr.Button("Taslak üret", variant="primary")
+            resp_type_md = gr.HTML(EMPTY_RESP)
             draft_out = gr.HTML(EMPTY_LETTER)
             with gr.Accordion("Ham JSON (yazı değil)", open=False):
                 writer_in_json = gr.Code(language="json", lines=6)
@@ -578,13 +738,13 @@ with demo_ctx as demo:
         outputs=[
             agent_md, ocr_out, analysis_md, analysis_out, rag_q_out,
             unit_out, rag_md, rag_cb, proc, yon_unit, actions_in, result_in,
-            st_ocr, st_analysis, st_plist,
+            st_ocr, st_analysis, st_plist, resp_type_md,
         ],
     )
     btn_draft.click(
         draft_handler,
         inputs=[rag_cb, proc, actions_in, result_in, unit_out, yon_unit, st_ocr, st_analysis, st_plist],
-        outputs=[writer_json, draft_out, writer_in_json, agent_md],
+        outputs=[writer_json, draft_out, writer_in_json, agent_md, resp_type_md],
     )
 
 demo.queue(default_concurrency_limit=1)

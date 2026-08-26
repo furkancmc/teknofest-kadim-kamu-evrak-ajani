@@ -26,9 +26,14 @@ def load_maps(path=None) -> dict:
     )
 
 
+def _strip_rag_numbers(s: str) -> str:
+    """topic_to_rag icindeki 5199/4982 gibi kanun no sizintisini kes."""
+    return " ".join(w for w in str(s).split() if not w.isdigit())
+
+
 _DATA = load_maps()
 TOPIC_TO_UNIT = dict(_DATA["topic_to_unit"])
-TOPIC_TO_RAG = dict(_DATA["topic_to_rag"])
+TOPIC_TO_RAG = {k: _strip_rag_numbers(v) for k, v in dict(_DATA["topic_to_rag"]).items()}
 UNITS = dict(_DATA["units"])
 SHARED_TOPICS = dict(_DATA.get("shared_topics") or {})
 
