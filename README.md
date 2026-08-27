@@ -113,7 +113,7 @@ kadim/
 │
 ├── app/                          # ORKESTRATÖR + GRADIO DEMOSU
 │   ├── notebooks/
-│   │   └── Qwen1_RAG_Demo_Colab.ipynb   # Uçtan uca canlı demo
+│   │   └── Agent_Demo.ipynb             # Uçtan uca canlı demo (vLLM multi-LoRA)
 │   ├── src/                             # Notebook hücrelerinin okunabilir kaynak karşılıkları
 │   │   ├── gradio_app.py                # Gradio arayüzü
 │   │   ├── draft_prompt.py              # Yazıcı ajanın sistem prompt'u
@@ -138,16 +138,17 @@ kadim/
 │       └── split_stats.txt              # Konu bazında dağılım
 │
 ├── yazi_qwen2/                   # 4) YAZICI — Görev 2
-│   ├── 01_finetune_qwen25_7b.ipynb      # LoRA eğitimi
-│   ├── 02_evaluate_qwen25_7b.ipynb      # İnce ayarlı model değerlendirmesi
-│   ├── 03_evaluate_base_model.ipynb     # Ham model değerlendirmesi
-│   ├── augment_missing_types.py         # Nadir yanıt türlerinin dengelenmesi
-│   ├── regenerate_drafts.py             # Taslak yeniden üretimi (eğitim seti)
-│   ├── template_fill_remaining.py       # Şablon ile kalan taslak tamamlama
-│   ├── canonical_system_prompt.txt      # Yazıcı ajanın kanonik sistem prompt'u
-│   └── veri/                            # Tam eğitim kümesi + temsilî örnek
-│       ├── qwen2_train_updated.jsonl · qwen2_val_updated.jsonl · qwen2_test_updated.jsonl
-│       └── qwen2_train_ornek.jsonl · qwen2_val_ornek.jsonl · qwen2_test_ornek.jsonl
+│   ├── 01_finetune_qwen25_7b.ipynb      # LoRA eğitimi (`*_updated.jsonl`)
+│   ├── 02_evaluate_qwen25_7b.ipynb      # İnce ayarlı model — 522 kayıt
+│   ├── 03_evaluate_base_model.ipynb     # Ham Instruct — aynı 522 kayıt
+│   ├── regenerate_drafts.py             # Mevzuatı olan kayıtlarda draft'ı yeniden yazar
+│   ├── template_fill_remaining.py       # API'nin kaçırdığı kayıtlara şablon taslak
+│   ├── augment_missing_types.py         # ONAY_YAZISI / TESPIT_TUTANAGI dengeleme
+│   ├── canonical_system_prompt.txt      # Resmî yazışma kuralları (sistem prompt)
+│   ├── .env.example                     # DeepSeek anahtarı şablonu (üretim betikleri)
+│   └── veri/
+│       ├── qwen2_*_updated.jsonl        # Eğitimde kullanılan tam küme (4.240 / 863 / 522)
+│       └── qwen2_*_ornek.jsonl          # Aynı şemadan küçük bakış örnekleri
 │
 └── mevzuat_rag/                  # 3) MEVZUAT — Arama motoru
     ├── requirements.txt
@@ -165,10 +166,10 @@ kadim/
 | `QWEN_VL_ocr/qwen_ocr_baseline_test.ipynb` | Ham görsel-dil modelinin 100 belgelik test kümesindeki hata oranı |
 | `QWEN_VL_ocr/qwen_ocr_finetune_lora.ipynb` | OCR LoRA eğitimi ve aynı test kümesinde ölçüm |
 | `analiz_qwen1/Qwen1_FineTune_Colab.ipynb` | Analiz LoRA eğitimi ve 241 kayıtlık test |
-| `yazi_qwen2/01_finetune_qwen25_7b.ipynb` | Yazıcı LoRA eğitimi |
-| `yazi_qwen2/02_evaluate_qwen25_7b.ipynb` | Yazıcı ince ayarlı model — 522 kayıtlık test |
-| `yazi_qwen2/03_evaluate_base_model.ipynb` | Yazıcı ham model — aynı 522 kayıt |
-| `app/notebooks/Qwen1_RAG_Demo_Colab.ipynb` | Uçtan uca canlı demo |
+| `yazi_qwen2/01_finetune_qwen25_7b.ipynb` | Yazıcı LoRA eğitimi — girdi: `veri/qwen2_train_updated.jsonl` ve `qwen2_val_updated.jsonl` |
+| `yazi_qwen2/02_evaluate_qwen25_7b.ipynb` | Yazıcı ince ayarlı model — `veri/qwen2_test_updated.jsonl` (522 kayıt) |
+| `yazi_qwen2/03_evaluate_base_model.ipynb` | Yazıcı ham Instruct — aynı test dosyası |
+| `app/notebooks/Agent_Demo.ipynb` | Uçtan uca canlı demo — OCR → analiz → RAG → memur → yazı (vLLM multi-LoRA, Gradio) |
 
 ---
 
@@ -243,9 +244,24 @@ Konu bazında dağılım `analiz_qwen1/veri/split_stats.txt` dosyasındadır. Ve
 
 **Amaç:** Analiz JSON'unu, memurun seçtiği süreç durumunu ve onaylanan mevzuat maddelerini alarak idari aksiyonları, yanıt türünü, süreç bilgisini ve **resmî yazı taslağını** üretmek.
 
-**Veri:** ChatML biçiminde toplam **5.625 kayıt** — 4.240 eğitim, 863 doğrulama, 522 test.
+**Veri (depoda, `yazi_qwen2/veri/`):** ChatML JSONL, toplam **5.625 kayıt**. Eğitim ve ölçüm **`*_updated.jsonl`** dosyalarını kullanır; `*_ornek.jsonl` aynı şemadan küçük bakış kopyalarıdır.
+
+| Dosya | Kayıt | Rol |
+|---|---:|---|
+| `qwen2_train_updated.jsonl` | 4.240 | LoRA eğitimi (`01_finetune_qwen25_7b.ipynb`) |
+| `qwen2_val_updated.jsonl` | 863 | Eğitim sırası doğrulama |
+| `qwen2_test_updated.jsonl` | 522 | Holdout — `02` ve `03` notebook'ları |
+| `qwen2_*_ornek.jsonl` | 250 / 60 / 60 | Şemayı incelemek için temsilî kesit |
 
 **Bir evraktan çok senaryo (1→N):** Gerçek idari hayatta aynı başvuru farklı süreç durumlarına düşebilir ve her durum farklı bir resmî yazı gerektirir. "İncelemede", "eksik bilgi bekleniyor", "yönlendirildi", "reddedildi" ve "tamamlandı" durumlarının her biri için ayrı bir yazı yazılır. Bu nedenle her analiz kaydı farklı süreç durumlarıyla eşlenerek birden çok eğitim örneğine açıldı. Yazıcı kümesinin (5.625) analiz kümesinden (2.444) büyük olmasının sebebi budur; model böylece aynı evrakın duruma göre nasıl farklı yazıldığını öğrenir.
+
+**Eğitim seti nasıl üretildi** (canlı demoda çalışmaz; set zaten üretilmiş):
+
+1. `regenerate_drafts.py` — ChatML kaydındaki sistem prompt'unu `canonical_system_prompt.txt` ile hizalar; `responsible_unit` alanını `target_unit` yapar. `selected_legislation` **dolu** kayıtlarda (~%85) yalnızca `draft` alanını DeepSeek ile yeniden yazar: verilen kanun/madde gövdeye doğal atıf olarak girer, diğer altı assistant alanı değişmez. Liste **boş** kayıtlarda taslağa dokunulmaz (fallback). Çıktı `*_updated.jsonl`.
+2. `template_fill_remaining.py` — API bakiyesi veya hata yüzünden `failed` kalan kayıtlara ücret gerektirmeyen kural tabanlı taslak basar (arz/rica kapanışı gönderen türüne göre). Başarılı kayıtlara dokunulmaz.
+3. `augment_missing_types.py` — seyrek kalan `ONAY_YAZISI` ve `TESPIT_TUTANAGI` örneklerini DeepSeek ile üretir; %80 / %10 / %10 oranında train / val / test `*_updated.jsonl` dosyalarına ekler.
+
+DeepSeek anahtarı `yazi_qwen2/.env.example` üzerinden; `.env` depoya girmez. Canlı yazı üretimi bu betiklere bağlı değildir: vLLM + `yazi_lora`.
 
 **Mevzuata dayanma ve halüsinasyon direnci:** Kayıtların yaklaşık %85'inde model, kendisine verilen mevzuat maddelerine doğrudan atıf yapar. Kalan %15'inde madde listesi bilinçli olarak boş bırakılır. Böylece model, ilgili mevzuat bulunamadığında **madde uydurmak yerine** genel idari usule uygun bir yazı üretmeyi öğrenir.
 
@@ -261,7 +277,7 @@ Konu bazında dağılım `analiz_qwen1/veri/split_stats.txt` dosyasındadır. Ve
 | ONAY_YAZISI | 315 | | | |
 | TESPIT_TUTANAGI | 253 | | | |
 
-Nadir kalan yanıt türleri `augment_missing_types.py` ile dengelendi. Modelin uyduğu resmî yazışma kurallarının tamamı `yazi_qwen2/canonical_system_prompt.txt` dosyasındadır.
+Modelin uyduğu resmî yazışma kurallarının tamamı `yazi_qwen2/canonical_system_prompt.txt` dosyasındadır.
 
 **Sonuç** — test kümesi: 522 kayıt.
 
@@ -397,6 +413,18 @@ python download_dataset.py
 python generate_dataset_1000.py --dataset_path ./turkish_law_dataset --output_dir ./dataset_1000
 ```
 
+Yazıcı kümesi depoda hazırdır (`yazi_qwen2/veri/qwen2_*_updated.jsonl`). Aynı hattı yeniden koşmak isterseniz (DeepSeek anahtarı gerekir; canlı serviste kullanılmaz):
+
+```bash
+cd yazi_qwen2
+copy .env.example .env          # DEEPSEEK_API_KEY
+python regenerate_drafts.py     # mevzuatı olan kayıtlarda draft
+python template_fill_remaining.py
+python augment_missing_types.py
+```
+
+`01` / `02` / `03` notebook'ları Colab'da `DATA_DIR` içindeki `*_updated.jsonl` dosyalarını okur; depodaki `veri/` klasörü bu dosyaların kopyasıdır.
+
 ### 5.3. Eğitim
 
 Notebook'lar sırayla çalıştırılır:
@@ -407,7 +435,12 @@ Notebook'lar sırayla çalıştırılır:
 
 ### 5.4. Uçtan uca demo
 
-Canlı sistem `app/notebooks/Qwen1_RAG_Demo_Colab.ipynb` notebook'u ile çalıştırılır; GPU'lu bir ortam gerekir. `app/src/gradio_app.py`, aynı arayüzün okunabilir kaynak karşılığıdır. Notebook sonunda paylaşılabilir bir Gradio bağlantısı açılır.
+Canlı sistem `app/notebooks/Agent_Demo.ipynb` ile çalışır (Colab A100). Dört ajan aynı notebook'tadır: VL vLLM (OCR LoRA) + tek Instruct vLLM üzerinde `analiz_lora` ve `yazi_lora`. `app/src/gradio_app.py` aynı masanın okunabilir kaynak karşılığıdır.
+
+1. Runtime → A100 80 GB.
+2. Drive'da dursun: `lora_adapter_qwen1/`, `lora_adapter_qwen2/`, `qwen_vl_7b_model/`, `qwen_vl_7b_lora_finetuned/`, `finetune_data_qwen1/` (`train.jsonl`, `belediye_konu.json`, `rag.zip` veya `rag/`).
+3. **Run all** → ilk turda paket çakışması için kırmızı `RuntimeError` (bilinçli) → **Restart session** → tekrar **Run all**.
+4. Gradio `share=True` bağlantısı açılır.
 
 **KADİM Evrak Masası arayüzü** — solda belge, ortada memur kararı ve mevzuat maddeleri, sağda üretilen taslak:
 
@@ -429,9 +462,9 @@ Statik önizleme: `docs/demo_onizleme_mock.html`.
 | `BAAI/bge-reranker-v2-m3` — yeniden sıralama | [Hugging Face](https://huggingface.co/BAAI/bge-reranker-v2-m3) | Apache-2.0 |
 | Bu projede eğitilen üç LoRA adaptörü | Notebook çıktısı olarak üretilir | MIT |
 
-**Depoda bulunanlar:** tüm kaynak kod, eğitim ve değerlendirme notebook'ları, sentetik veri üretim betikleri, analiz eğitim kümesinin tamamı, yazıcı eğitim kümesinin tamamı (`yazi_qwen2/veri/` içindeki `*_updated.jsonl`) ve temsilî örnekler, OCR veri kümesinden dört örnek görsel, sistem prompt'ları, eşleme tabloları ve Gradio arayüzü.
+**Depoda bulunanlar:** tüm kaynak kod, eğitim ve değerlendirme notebook'ları, sentetik veri üretim betikleri (`analiz_qwen1/generate_dataset_*.py`, `yazi_qwen2/regenerate_drafts.py`, `template_fill_remaining.py`, `augment_missing_types.py`), analiz eğitim kümesinin tamamı, yazıcı eğitim kümesinin tamamı (`yazi_qwen2/veri/qwen2_{train,val,test}_updated.jsonl`) ve küçük `*_ornek.jsonl` kesitleri, OCR'dan dört örnek görsel, sistem prompt'ları, eşleme tabloları ve Gradio arayüzü.
 
-**Depoda bulunmayanlar:** model ağırlıkları, LoRA adaptörleri, üretilmiş arama indeksi ve tam boyutlu veri arşivleri. Bunların tamamı depodaki betik ve notebook'larla yeniden üretilebilir.
+**Depoda bulunmayanlar:** taban model ve LoRA ağırlıkları, RAG vektör indeksi, OCR'ın 1000'lik görsel arşivi. Bunlar Hugging Face / notebook çıktısı / depodaki betiklerle yeniden üretilir.
 
 ---
 
