@@ -39,11 +39,6 @@ dataset_1000.zip
 turkish_law_dataset/
 *.zip
 
-# ---- Tam egitim verisi (repoda yalnizca ornek tutulur; bkz. yazi_qwen2/veri) ----
-qwen2_train_updated.jsonl
-qwen2_val_updated.jsonl
-qwen2_test_updated.jsonl
-
 # ---- Yerel degerlendirme ciktilari ----
 test_eval_results.json
 **/test_eval_results.json

@@ -142,8 +142,12 @@ kadim/
 │   ├── 02_evaluate_qwen25_7b.ipynb      # İnce ayarlı model değerlendirmesi
 │   ├── 03_evaluate_base_model.ipynb     # Ham model değerlendirmesi
 │   ├── augment_missing_types.py         # Nadir yanıt türlerinin dengelenmesi
+│   ├── regenerate_drafts.py             # Taslak yeniden üretimi (eğitim seti)
+│   ├── template_fill_remaining.py       # Şablon ile kalan taslak tamamlama
 │   ├── canonical_system_prompt.txt      # Yazıcı ajanın kanonik sistem prompt'u
-│   └── veri/                            # Eğitim kümesinden temsilî örnek
+│   └── veri/                            # Tam eğitim kümesi + temsilî örnek
+│       ├── qwen2_train_updated.jsonl · qwen2_val_updated.jsonl · qwen2_test_updated.jsonl
+│       └── qwen2_train_ornek.jsonl · qwen2_val_ornek.jsonl · qwen2_test_ornek.jsonl
 │
 └── mevzuat_rag/                  # 3) MEVZUAT — Arama motoru
     ├── requirements.txt
@@ -425,7 +429,7 @@ Statik önizleme: `docs/demo_onizleme_mock.html`.
 | `BAAI/bge-reranker-v2-m3` — yeniden sıralama | [Hugging Face](https://huggingface.co/BAAI/bge-reranker-v2-m3) | Apache-2.0 |
 | Bu projede eğitilen üç LoRA adaptörü | Notebook çıktısı olarak üretilir | MIT |
 
-**Depoda bulunanlar:** tüm kaynak kod, eğitim ve değerlendirme notebook'ları, sentetik veri üretim betikleri, analiz eğitim kümesinin tamamı, yazıcı eğitim kümesinden temsilî örnek, OCR veri kümesinden dört örnek görsel, sistem prompt'ları, eşleme tabloları ve Gradio arayüzü.
+**Depoda bulunanlar:** tüm kaynak kod, eğitim ve değerlendirme notebook'ları, sentetik veri üretim betikleri, analiz eğitim kümesinin tamamı, yazıcı eğitim kümesinin tamamı (`yazi_qwen2/veri/` içindeki `*_updated.jsonl`) ve temsilî örnekler, OCR veri kümesinden dört örnek görsel, sistem prompt'ları, eşleme tabloları ve Gradio arayüzü.
 
 **Depoda bulunmayanlar:** model ağırlıkları, LoRA adaptörleri, üretilmiş arama indeksi ve tam boyutlu veri arşivleri. Bunların tamamı depodaki betik ve notebook'larla yeniden üretilebilir.
 
