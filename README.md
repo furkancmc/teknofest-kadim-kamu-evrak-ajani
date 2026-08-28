@@ -6,6 +6,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Taban model](https://img.shields.io/badge/Taban%20model-Qwen2.5--7B-orange.svg)](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct)
 [![Servis](https://img.shields.io/badge/Servis-vLLM%20multi--LoRA-purple.svg)](https://github.com/vllm-project/vllm)
+[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97-KADİM%20ağırlıklar-yellow)](https://huggingface.co/furkancmc)
 
 > TEKNOFEST 2026 — Yapay Zeka Dil Ajanları Yarışması, 1. Senaryo: Kamu Evrak ve Yazışma Süreçleri.
 > **Görev 1:** evrak sınıflandırma ve içerik analizi · **Görev 2:** resmî yazı taslaklama ve birim yönlendirme.
@@ -15,6 +16,17 @@ Belediyeye ulaşan bir dilekçe ya da kurum yazısı sisteme girer. Sistem belge
 ```
 Evrak görseli/metni → OCR → Analiz → Mevzuat → [ Memur kararı ] → Resmî yazı taslağı + hedef birim
 ```
+
+Eğitilmiş LoRA adaptörleri ve mevzuat arama indeksi GitHub'da yoktur (şartname §7). Herkese açık kopyalar Hugging Face'tedir:
+
+| Ne | Hugging Face |
+|---|---|
+| Analiz LoRA (`analiz_lora`) | [`furkancmc/kadim-analiz-lora`](https://huggingface.co/furkancmc/kadim-analiz-lora) |
+| Yazıcı LoRA (`yazi_lora`) | [`furkancmc/kadim-yazi-lora`](https://huggingface.co/furkancmc/kadim-yazi-lora) |
+| OCR LoRA | [`furkancmc/kadim-ocr-lora`](https://huggingface.co/furkancmc/kadim-ocr-lora) |
+| RAG indeksi | [`furkancmc/kadim-rag`](https://huggingface.co/datasets/furkancmc/kadim-rag) |
+
+Taban modeller ayrıca: [`Qwen/Qwen2.5-7B-Instruct`](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct), [`Qwen/Qwen2.5-VL-7B-Instruct`](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct).
 
 ---
 
@@ -437,8 +449,13 @@ Notebook'lar sırayla çalıştırılır:
 
 Canlı sistem `app/notebooks/Agent_Demo.ipynb` ile çalışır (Colab A100). Dört ajan aynı notebook'tadır: VL vLLM (OCR LoRA) + tek Instruct vLLM üzerinde `analiz_lora` ve `yazi_lora`. `app/src/gradio_app.py` aynı masanın okunabilir kaynak karşılığıdır.
 
+Ağırlıklar iki yerde durabilir:
+
+- **Hugging Face (herkese açık):** yukarıdaki dört repo. Colab'da `huggingface_hub.snapshot_download` ile indirilip Drive'daki klasör adlarına karşılık gelir (`lora_adapter_qwen1` ← analiz, `lora_adapter_qwen2` ← yazı, `qwen_vl_7b_lora_finetuned` ← OCR, `rag/` ← `kadim-rag`).
+- **Google Drive (geliştirme):** notebook şu an bu yolları arar.
+
 1. Runtime → A100 80 GB.
-2. Drive'da dursun: `lora_adapter_qwen1/`, `lora_adapter_qwen2/`, `qwen_vl_7b_model/`, `qwen_vl_7b_lora_finetuned/`, `finetune_data_qwen1/` (`train.jsonl`, `belediye_konu.json`, `rag.zip` veya `rag/`).
+2. LoRA + RAG hazır olsun (HF indirmesi veya Drive: `lora_adapter_qwen1/`, `lora_adapter_qwen2/`, `qwen_vl_7b_lora_finetuned/`, `finetune_data_qwen1/` içinde `train.jsonl`, `belediye_konu.json`, `rag/`). VL tabanı Hugging Face `Qwen/Qwen2.5-VL-7B-Instruct` veya Drive `qwen_vl_7b_model/`.
 3. **Run all** → ilk turda paket çakışması için kırmızı `RuntimeError` (bilinçli) → **Restart session** → tekrar **Run all**.
 4. Gradio `share=True` bağlantısı açılır.
 
@@ -460,11 +477,14 @@ Statik önizleme: `docs/demo_onizleme_mock.html`.
 | `Qwen/Qwen2.5-VL-7B-Instruct` — OCR taban modeli | [Hugging Face](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct) | Apache-2.0 |
 | `BAAI/bge-m3` — vektör temsili | [Hugging Face](https://huggingface.co/BAAI/bge-m3) | MIT |
 | `BAAI/bge-reranker-v2-m3` — yeniden sıralama | [Hugging Face](https://huggingface.co/BAAI/bge-reranker-v2-m3) | Apache-2.0 |
-| Bu projede eğitilen üç LoRA adaptörü | Notebook çıktısı olarak üretilir | MIT |
+| Analiz LoRA | [`furkancmc/kadim-analiz-lora`](https://huggingface.co/furkancmc/kadim-analiz-lora) | MIT |
+| Yazıcı LoRA | [`furkancmc/kadim-yazi-lora`](https://huggingface.co/furkancmc/kadim-yazi-lora) | MIT |
+| OCR LoRA | [`furkancmc/kadim-ocr-lora`](https://huggingface.co/furkancmc/kadim-ocr-lora) | MIT |
+| RAG indeksi | [`furkancmc/kadim-rag`](https://huggingface.co/datasets/furkancmc/kadim-rag) | MIT |
 
 **Depoda bulunanlar:** tüm kaynak kod, eğitim ve değerlendirme notebook'ları, sentetik veri üretim betikleri (`analiz_qwen1/generate_dataset_*.py`, `yazi_qwen2/regenerate_drafts.py`, `template_fill_remaining.py`, `augment_missing_types.py`), analiz eğitim kümesinin tamamı, yazıcı eğitim kümesinin tamamı (`yazi_qwen2/veri/qwen2_{train,val,test}_updated.jsonl`) ve küçük `*_ornek.jsonl` kesitleri, OCR'dan dört örnek görsel, sistem prompt'ları, eşleme tabloları ve Gradio arayüzü.
 
-**Depoda bulunmayanlar:** taban model ve LoRA ağırlıkları, RAG vektör indeksi, OCR'ın 1000'lik görsel arşivi. Bunlar Hugging Face / notebook çıktısı / depodaki betiklerle yeniden üretilir.
+**Depoda bulunmayanlar:** taban model ağırlıkları, üç LoRA (Hugging Face'te), RAG vektör indeksi (Hugging Face `kadim-rag`), OCR'ın 1000'lik görsel arşivi. Taban modeller Hugging Face Qwen/BGE kartlarından; LoRA ve RAG yukarıdaki KADİM repolarından indirilir.
 
 ---
 
@@ -521,6 +541,7 @@ Hiçbir veri kümesinde gerçek kişisel veri (TCKN, ad, adres, telefon) yer alm
 - Qwen2.5 ve Qwen2.5-VL — Alibaba Cloud
 - vLLM — çalışma zamanı çıkarım motoru
 - BGE-M3 ve BGE-reranker-v2-m3 — BAAI
+- KADİM LoRA ve RAG — [`kadim-analiz-lora`](https://huggingface.co/furkancmc/kadim-analiz-lora), [`kadim-yazi-lora`](https://huggingface.co/furkancmc/kadim-yazi-lora), [`kadim-ocr-lora`](https://huggingface.co/furkancmc/kadim-ocr-lora), [`kadim-rag`](https://huggingface.co/datasets/furkancmc/kadim-rag)
 - OCR kaynak metinleri — [`erdem-erdem/Turkish-Law-Documents-700k-clustered`](https://huggingface.co/datasets/erdem-erdem/Turkish-Law-Documents-700k-clustered); birincil kurumlar [Yargıtay Karar Arama](https://karararama.yargitay.gov.tr/) ve [Danıştay Karar Arama](https://kararara.danistay.gov.tr/)
 - Mevzuat metinleri — [T.C. Cumhurbaşkanlığı Mevzuat Bilgi Sistemi](https://www.mevzuat.gov.tr/)
 - Sentetik evrak üretimi — DeepSeek API
