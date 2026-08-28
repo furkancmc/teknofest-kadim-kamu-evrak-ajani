@@ -1,21 +1,21 @@
-"""Arama servisi — Qwen ile yazı ajanları arasındaki katman.
+"""Mevzuat arama servisi (analiz ile yazıcı arasındaki katman).
 
 Boru hattı:
     sorgu -> [dense bge-m3 | BM25] -> RRF -> bge-reranker-v2-m3
     -> kavramsal sorguda geçici/amaç/kapsam/tanım cezası + madde başlığı artışı
 
-Qwen tek sorgu değil 3-5 `rag_queries` üretiyor; `search()` liste alır, her
-sorguyu ayrı çalıştırır, sonuçları RRF ile birleştirir ve AYNI MADDEYİ
-tekrarlamaz.
+Canlı demoda sorgu modeli üretilmez. `search()` bir string listesi alır
+(çoğu zaman iki parça): `topic_to_rag[primary_topic]` + `requested_action`
+(adres gibi duruyorsa eylem düşülür). OCR metni, özet ve kişi/adres sorguya
+girmez. Liste elemanları ayrı aranır, RRF ile birleştirilir, aynı madde tekrarlanmaz.
 
-Müdürlük bir FİLTRE değil, yalnız opsiyonel puan artırıcıdır ve varsayılan
-olarak kapalıdır: Qwen'in `primary_unit` doğruluğu %87, yani her sekiz
-evraktan birinde yanlış. Filtre olsaydı o evraklarda doğru mevzuat hiç
-gelmezdi.
+Hedef müdürlük bu motorun işi değildir; `primary_topic` → `belediye_konu.json`.
+`unit` parametresi varsa yalnız opsiyonel puan artırıcıdır, varsayılan kapalı
+(filtre değil).
 
-Terminalden denemek için:
-    .venv/Scripts/python.exe -m rag.search
-    .venv/Scripts/python.exe -m rag.search "sokak köpeği kaydı kimin görevi"
+Terminal:
+    python -m rag.search
+    python -m rag.search "sokak köpeği kaydı kimin görevi"
 """
 
 from __future__ import annotations
