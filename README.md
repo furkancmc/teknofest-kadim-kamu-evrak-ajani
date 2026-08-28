@@ -45,6 +45,8 @@ Taban modeller ayrıca: [`Qwen/Qwen2.5-7B-Instruct`](https://huggingface.co/Qwen
 | Yazıcı | Mevzuat atıf sadakati ↑ | %83,91 | **%92,53** | +8,6 puan |
 | Mevzuat araması | İlk sırada isabet (H@1) ↑ | 59,5 | **69,0** | +9,5 puan |
 
+OCR, analiz ve yazıcı satırları LoRA ince ayarıdır (aynı test, ham model vs adaptör). Mevzuat satırı LoRA değildir: aynı BGE-M3 aramasına **sıralama düzeltmesi** eklenince H@1 59,5 → 69,0.
+
 Her modülün ölçüm ayrıntısı, kendi bölümünün sonundadır.
 
 ---
@@ -187,7 +189,7 @@ kadim/
 
 ## 3. Modüller, Eğitim ve Sonuçlar
 
-Üç dil modeli eğitildi. Üçü de tam parametre eğitimi yerine **LoRA** ile, `Qwen/Qwen2.5-7B-Instruct` (OCR için `Qwen2.5-VL-7B-Instruct`) taban modeli üzerine, **bf16** hassasiyetle uyarlandı.
+Üç dil modeli eğitildi; üçü de tam parametre eğitimi yerine **LoRA** ile `Qwen/Qwen2.5-7B-Instruct` (OCR için `Qwen2.5-VL-7B-Instruct`) üzerine uyarlandı. OCR ve yazıcı **bf16**; analiz **QLoRA (4-bit)**.
 
 Her modülün ölçümü eğitimde kullanılmayan sabit bir test kümesi üzerinde, ham model ile ince ayarlı model **aynı kümede** karşılaştırılarak yapıldı.
 
