@@ -17,14 +17,13 @@ Belediyeye ulaşan bir dilekçe ya da kurum yazısı sisteme girer. Sistem belge
 Evrak görseli/metni → OCR → Analiz → Mevzuat → [ Memur kararı ] → Resmî yazı taslağı + hedef birim
 ```
 
-Eğitilmiş LoRA adaptörleri ve mevzuat arama indeksi GitHub'da yoktur (şartname §7). Herkese açık kopyalar ve eğitim veri setleri Hugging Face'tedir:
+Eğitilmiş LoRA adaptörleri GitHub'da yoktur (şartname §7). Herkese açık kopyalar ve eğitim veri setleri Hugging Face'tedir. Mevzuat arama indeksi yayınlanmaz; `mevzuat_rag/` ile Mevzuat Bilgi Sistemi'nden yeniden derlenir (bkz. [3.4](#34-mevzuat-arama-motoru)).
 
 | Ne | Hugging Face |
 |---|---|
 | Analiz LoRA (`analiz_lora`) | [`furkancmc/kadim-analiz-lora`](https://huggingface.co/furkancmc/kadim-analiz-lora) |
 | Yazıcı LoRA (`yazi_lora`) | [`furkancmc/kadim-yazi-lora`](https://huggingface.co/furkancmc/kadim-yazi-lora) |
 | OCR LoRA | [`furkancmc/kadim-ocr-lora`](https://huggingface.co/furkancmc/kadim-ocr-lora) |
-| RAG indeksi | [`furkancmc/kadim-rag`](https://huggingface.co/datasets/furkancmc/kadim-rag) |
 | Analiz veri seti | [`furkancmc/kadim-analiz-data`](https://huggingface.co/datasets/furkancmc/kadim-analiz-data) |
 | Yazıcı veri seti | [`furkancmc/kadim-yazi-data`](https://huggingface.co/datasets/furkancmc/kadim-yazi-data) |
 | OCR veri seti | [`furkancmc/kadim-ocr-data`](https://huggingface.co/datasets/furkancmc/kadim-ocr-data) |
@@ -456,7 +455,7 @@ Canlı sistem `app/notebooks/Agent_Demo.ipynb` ile çalışır (Colab A100). Dö
 
 Ağırlıklar iki yerde durabilir:
 
-- **Hugging Face (herkese açık):** yukarıdaki dört repo. Colab'da `huggingface_hub.snapshot_download` ile indirilip Drive'daki klasör adlarına karşılık gelir (`lora_adapter_qwen1` ← analiz, `lora_adapter_qwen2` ← yazı, `qwen_vl_7b_lora_finetuned` ← OCR, `rag/` ← `kadim-rag`).
+- **Hugging Face (herkese açık):** yukarıdaki LoRA repoları. Colab'da `huggingface_hub.snapshot_download` ile indirilip Drive'daki klasör adlarına karşılık gelir (`lora_adapter_qwen1` ← analiz, `lora_adapter_qwen2` ← yazı, `qwen_vl_7b_lora_finetuned` ← OCR). Mevzuat indeksi (`rag/`) Hugging Face'te yoktur; `mevzuat_rag/` ile yeniden derlenip Drive'a konur.
 - **Google Drive (geliştirme):** notebook şu an bu yolları arar.
 
 1. Runtime → A100 80 GB.
@@ -485,14 +484,13 @@ Statik önizleme: `docs/demo_onizleme_mock.html`.
 | Analiz LoRA | [`furkancmc/kadim-analiz-lora`](https://huggingface.co/furkancmc/kadim-analiz-lora) | MIT |
 | Yazıcı LoRA | [`furkancmc/kadim-yazi-lora`](https://huggingface.co/furkancmc/kadim-yazi-lora) | MIT |
 | OCR LoRA | [`furkancmc/kadim-ocr-lora`](https://huggingface.co/furkancmc/kadim-ocr-lora) | MIT |
-| RAG indeksi | [`furkancmc/kadim-rag`](https://huggingface.co/datasets/furkancmc/kadim-rag) | MIT |
 | Analiz veri seti (sentetik) | [`furkancmc/kadim-analiz-data`](https://huggingface.co/datasets/furkancmc/kadim-analiz-data) | MIT |
 | Yazıcı veri seti (sentetik) | [`furkancmc/kadim-yazi-data`](https://huggingface.co/datasets/furkancmc/kadim-yazi-data) | MIT |
 | OCR veri seti (sentetik görsel) | [`furkancmc/kadim-ocr-data`](https://huggingface.co/datasets/furkancmc/kadim-ocr-data) | MIT; kaynak metinler Yargıtay/Danıştay'ın kamuya açık kararlarıdır |
 
 **Depoda bulunanlar:** tüm kaynak kod, eğitim ve değerlendirme notebook'ları, sentetik veri üretim betikleri (`analiz_qwen1/generate_dataset_*.py`, `yazi_qwen2/regenerate_drafts.py`, `template_fill_remaining.py`, `augment_missing_types.py`), analiz eğitim kümesinin tamamı, yazıcı eğitim kümesinin tamamı (`yazi_qwen2/veri/qwen2_{train,val,test}_updated.jsonl`) ve küçük `*_ornek.jsonl` kesitleri, OCR'dan dört örnek görsel, sistem prompt'ları, eşleme tabloları ve Gradio arayüzü.
 
-**Depoda bulunmayanlar:** taban model ağırlıkları, üç LoRA (Hugging Face'te), RAG vektör indeksi (Hugging Face `kadim-rag`), OCR'ın 1000'lik görsel arşivi. Taban modeller Hugging Face Qwen/BGE kartlarından; LoRA ve RAG yukarıdaki KADİM repolarından indirilir.
+**Depoda bulunmayanlar:** taban model ağırlıkları, üç LoRA (Hugging Face'te), RAG vektör indeksi (yayınlanmaz; `mevzuat_rag/` ile yeniden derlenir). Taban modeller Hugging Face Qwen/BGE kartlarından, LoRA adaptörleri yukarıdaki KADİM repolarından indirilir. OCR'ın 1000'lik görsel arşivi [`kadim-ocr-data`](https://huggingface.co/datasets/furkancmc/kadim-ocr-data) olarak Hugging Face'tedir.
 
 ---
 
@@ -549,7 +547,7 @@ Hiçbir veri kümesinde gerçek kişisel veri (TCKN, ad, adres, telefon) yer alm
 - Qwen2.5 ve Qwen2.5-VL — Alibaba Cloud
 - vLLM — çalışma zamanı çıkarım motoru
 - BGE-M3 ve BGE-reranker-v2-m3 — BAAI
-- KADİM LoRA ve RAG — [`kadim-analiz-lora`](https://huggingface.co/furkancmc/kadim-analiz-lora), [`kadim-yazi-lora`](https://huggingface.co/furkancmc/kadim-yazi-lora), [`kadim-ocr-lora`](https://huggingface.co/furkancmc/kadim-ocr-lora), [`kadim-rag`](https://huggingface.co/datasets/furkancmc/kadim-rag)
+- KADİM LoRA adaptörleri — [`kadim-analiz-lora`](https://huggingface.co/furkancmc/kadim-analiz-lora), [`kadim-yazi-lora`](https://huggingface.co/furkancmc/kadim-yazi-lora), [`kadim-ocr-lora`](https://huggingface.co/furkancmc/kadim-ocr-lora)
 - OCR kaynak metinleri — [`erdem-erdem/Turkish-Law-Documents-700k-clustered`](https://huggingface.co/datasets/erdem-erdem/Turkish-Law-Documents-700k-clustered); birincil kurumlar [Yargıtay Karar Arama](https://karararama.yargitay.gov.tr/) ve [Danıştay Karar Arama](https://kararara.danistay.gov.tr/)
 - Mevzuat metinleri — [T.C. Cumhurbaşkanlığı Mevzuat Bilgi Sistemi](https://www.mevzuat.gov.tr/)
 - Sentetik evrak üretimi — DeepSeek API
