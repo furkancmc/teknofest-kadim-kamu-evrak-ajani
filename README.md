@@ -17,7 +17,7 @@ Belediyeye ulaşan bir dilekçe ya da kurum yazısı sisteme girer. Sistem belge
 Evrak görseli/metni → OCR → Analiz → Mevzuat → [ Memur kararı ] → Resmî yazı taslağı + hedef birim
 ```
 
-Eğitilmiş LoRA adaptörleri GitHub'da yoktur (şartname §7). Herkese açık kopyalar ve eğitim veri setleri Hugging Face'tedir. Mevzuat arama indeksi yayınlanmaz; `mevzuat_rag/` ile Mevzuat Bilgi Sistemi'nden yeniden derlenir (bkz. [3.4](#34-mevzuat-arama-motoru)).
+Eğitilmiş LoRA adaptörleri GitHub'da yoktur (şartname §7). Herkese açık kopyalar ve eğitim veri setleri Hugging Face'tedir. Mevzuat arama indeksi yayınlanmaz; `mevzuat_rag/` ile Mevzuat Bilgi Sistemi'nden yeniden derlenir (bkz. [3.4](#34-mevzuat-arama-motoru--mevzuat_rag)).
 
 | Ne | Hugging Face |
 |---|---|
