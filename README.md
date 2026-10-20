@@ -17,7 +17,7 @@ Belediyeye ulaşan bir dilekçe ya da kurum yazısı sisteme girer. Sistem belge
 Evrak görseli/metni → OCR → Analiz → Mevzuat → [ Memur kararı ] → Resmî yazı taslağı + hedef birim
 ```
 
-Eğitilmiş LoRA adaptörleri ve mevzuat arama indeksi GitHub'da yoktur (şartname §7). Herkese açık kopyalar Hugging Face'tedir:
+Eğitilmiş LoRA adaptörleri ve mevzuat arama indeksi GitHub'da yoktur (şartname §7). Herkese açık kopyalar ve eğitim veri setleri Hugging Face'tedir:
 
 | Ne | Hugging Face |
 |---|---|
@@ -25,6 +25,9 @@ Eğitilmiş LoRA adaptörleri ve mevzuat arama indeksi GitHub'da yoktur (şartna
 | Yazıcı LoRA (`yazi_lora`) | [`furkancmc/kadim-yazi-lora`](https://huggingface.co/furkancmc/kadim-yazi-lora) |
 | OCR LoRA | [`furkancmc/kadim-ocr-lora`](https://huggingface.co/furkancmc/kadim-ocr-lora) |
 | RAG indeksi | [`furkancmc/kadim-rag`](https://huggingface.co/datasets/furkancmc/kadim-rag) |
+| Analiz veri seti | [`furkancmc/kadim-analiz-data`](https://huggingface.co/datasets/furkancmc/kadim-analiz-data) |
+| Yazıcı veri seti | [`furkancmc/kadim-yazi-data`](https://huggingface.co/datasets/furkancmc/kadim-yazi-data) |
+| OCR veri seti | [`furkancmc/kadim-ocr-data`](https://huggingface.co/datasets/furkancmc/kadim-ocr-data) |
 
 Taban modeller ayrıca: [`Qwen/Qwen2.5-7B-Instruct`](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct), [`Qwen/Qwen2.5-VL-7B-Instruct`](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct).
 
@@ -483,6 +486,9 @@ Statik önizleme: `docs/demo_onizleme_mock.html`.
 | Yazıcı LoRA | [`furkancmc/kadim-yazi-lora`](https://huggingface.co/furkancmc/kadim-yazi-lora) | MIT |
 | OCR LoRA | [`furkancmc/kadim-ocr-lora`](https://huggingface.co/furkancmc/kadim-ocr-lora) | MIT |
 | RAG indeksi | [`furkancmc/kadim-rag`](https://huggingface.co/datasets/furkancmc/kadim-rag) | MIT |
+| Analiz veri seti (sentetik) | [`furkancmc/kadim-analiz-data`](https://huggingface.co/datasets/furkancmc/kadim-analiz-data) | MIT |
+| Yazıcı veri seti (sentetik) | [`furkancmc/kadim-yazi-data`](https://huggingface.co/datasets/furkancmc/kadim-yazi-data) | MIT |
+| OCR veri seti (sentetik görsel) | [`furkancmc/kadim-ocr-data`](https://huggingface.co/datasets/furkancmc/kadim-ocr-data) | MIT; kaynak metinler Yargıtay/Danıştay'ın kamuya açık kararlarıdır |
 
 **Depoda bulunanlar:** tüm kaynak kod, eğitim ve değerlendirme notebook'ları, sentetik veri üretim betikleri (`analiz_qwen1/generate_dataset_*.py`, `yazi_qwen2/regenerate_drafts.py`, `template_fill_remaining.py`, `augment_missing_types.py`), analiz eğitim kümesinin tamamı, yazıcı eğitim kümesinin tamamı (`yazi_qwen2/veri/qwen2_{train,val,test}_updated.jsonl`) ve küçük `*_ornek.jsonl` kesitleri, OCR'dan dört örnek görsel, sistem prompt'ları, eşleme tabloları ve Gradio arayüzü.
 
